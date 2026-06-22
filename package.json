@@ -1,0 +1,9 @@
+{
+  "name": "aixcam",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aixcam creator platform web experience",
+  "scripts": {
+    "check": "node scripts/check-pages.js"
+  }
+}

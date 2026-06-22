@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Log in to an existing Aixcam member account for creator tools, subscriptions, livestreams, and fan engagement."
+    >
+    <title>Login | Aixcam</title>
+    <link rel="icon" type="image/svg+xml" href="assets/app-icon.svg">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="scripts/auth.js" defer></script>
+  </head>
+  <body>
+    <main class="site-shell">
+      <header class="site-header" aria-label="Site header">
+        <a class="brand" href="index.html" aria-label="Aixcam home">
+          <span class="app-icon" aria-hidden="true">
+            <img src="assets/app-icon.svg" alt="">
+          </span>
+          <span class="brand-name">Aixcam</span>
+        </a>
+        <nav class="nav-actions" aria-label="Member navigation">
+          <a class="button secondary" href="login.html" aria-current="page">Member login</a>
+          <a class="button" href="signup.html">Join Aixcam</a>
+        </nav>
+      </header>
+
+      <section class="auth-layout" aria-labelledby="login-title">
+        <div class="auth-panel">
+          <p class="eyebrow">Existing members</p>
+          <h1 id="login-title">Welcome back to Aixcam.</h1>
+          <p class="lead">
+            Log in to manage livestreams, subscriptions, virtual gifts, premium
+            content, fan messaging, and your creator growth tools.
+          </p>
+          <ul class="checklist" aria-label="Member access areas">
+            <li>Return to your creator dashboard and fan engagement tools.</li>
+            <li>Manage memberships, premium content, and monetization settings.</li>
+            <li>Continue from a secure, responsive member entry point.</li>
+          </ul>
+        </div>
+
+        <form class="auth-card" data-auth-form="login" novalidate>
+          <header>
+            <span class="app-icon" style="--icon-size: 72px">
+              <img src="assets/app-icon.svg" alt="Aixcam app icon">
+            </span>
+            <h2>Member login</h2>
+            <p class="helper-text">Access your existing Aixcam account.</p>
+          </header>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="login-email">Email address</label>
+              <input id="login-email" name="email" type="email" autocomplete="email" required>
+            </div>
+
+            <div class="field">
+              <label for="login-password">Password</label>
+              <input
+                id="login-password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                minlength="8"
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-status" data-form-status role="status" aria-live="polite"></div>
+
+          <button type="submit">Log in</button>
+          <div class="auth-switch">
+            <a class="button secondary" href="signup.html">Create a new account</a>
+            <a class="button secondary" href="index.html">Back to home</a>
+          </div>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>
