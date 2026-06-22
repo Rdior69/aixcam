@@ -37,7 +37,6 @@ enum AuthStatus: Equatable {
     case error(String)
 }
 
-@MainActor
 final class AuthViewModel: ObservableObject {
     @Published private(set) var members: [Member] = []
     @Published var status: AuthStatus = .idle
