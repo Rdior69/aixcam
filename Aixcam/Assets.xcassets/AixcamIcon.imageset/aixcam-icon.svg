@@ -1,6 +1,4 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title description">
-  <title id="title">Aixcam app icon</title>
-  <desc id="description">A gradient camera lens mark for the Aixcam creator platform.</desc>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="512" height="512" rx="120" fill="url(#background)"/>
   <path d="M145 185C145 160.147 165.147 140 190 140H322C346.853 140 367 160.147 367 185V327C367 351.853 346.853 372 322 372H190C165.147 372 145 351.853 145 327V185Z" fill="#07111F" fill-opacity="0.82"/>
   <path d="M195 169H259L278 196H323C333.493 196 342 204.507 342 215V319C342 329.493 333.493 338 323 338H189C178.507 338 170 329.493 170 319V194C170 180.193 181.193 169 195 169Z" fill="#FFFFFF" fill-opacity="0.92"/>

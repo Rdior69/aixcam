@@ -1,21 +1,19 @@
 # aixcam
 Aixcam is a next-generation creator platform that combines livestreaming, fan engagement, subscriptions, virtual gifting, AI-powered experiences, and premium monetization tools to help creators build thriving digital businesses
 
-## Web pages
+## iOS app
 
-This repository includes a lightweight static web experience:
+This repository includes an Xcode SwiftUI project for the Aixcam iOS app.
 
-- `index.html` introduces Aixcam and links to account actions.
-- `signup.html` lets new users create a local prototype account.
-- `login.html` lets existing local prototype members log back in.
+- `Aixcam.xcodeproj` opens the app in Xcode.
+- `Aixcam/ContentView.swift` contains the landing, sign-up, and login screens.
+- `Aixcam/AuthViewModel.swift` handles prototype account validation and local member storage.
+- `Aixcam/Assets.xcassets` contains the app icon and in-app icon image.
 
-Open `index.html` in a browser to preview the app, or serve the directory with any
-static file server.
+Open `Aixcam.xcodeproj` in Xcode, choose an iPhone simulator, then build and run.
 
-## Checks
+## App icon sizing
 
-Run the page validation script with:
-
-```bash
-npm run check
-```
+The reusable `AixcamIconView` uses SwiftUI's `resizable()` and `scaledToFit()`
+modifiers with an explicit square frame so the icon image resizes without being
+stretched or cropped.
