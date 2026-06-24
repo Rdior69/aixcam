@@ -19,6 +19,14 @@
 		C3D4E5F60100000000000104 /* CreatorOnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */; };
 		C3D4E5F60100000000000105 /* CreatorOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */; };
 		C3D4E5F60100000000000106 /* CreatorOnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */; };
+		D4E5F60100000000000101 /* ProfileInformationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000201 /* ProfileInformationView.swift */; };
+		D4E5F60100000000000102 /* ProfileInformationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000202 /* ProfileInformationViewModel.swift */; };
+		D4E5F60100000000000103 /* FirebaseCreatorMediaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000203 /* FirebaseCreatorMediaService.swift */; };
+		D4E5F60100000000000104 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000204 /* GoogleService-Info.plist */; };
+		D4E5F60100000000000106 /* ProfileInformationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000206 /* ProfileInformationViewModelTests.swift */; };
+		E5F601000000000000000021 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = E5F601000000000000000011 /* FirebaseCore */; };
+		E5F601000000000000000022 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = E5F601000000000000000012 /* FirebaseFirestore */; };
+		E5F601000000000000000023 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = E5F601000000000000000013 /* FirebaseStorage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +55,11 @@
 		C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViewModel.swift; sourceTree = "<group>"; };
 		C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingView.swift; sourceTree = "<group>"; };
 		C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViewModelTests.swift; sourceTree = "<group>"; };
+		D4E5F60100000000000201 /* ProfileInformationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileInformationView.swift; sourceTree = "<group>"; };
+		D4E5F60100000000000202 /* ProfileInformationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileInformationViewModel.swift; sourceTree = "<group>"; };
+		D4E5F60100000000000203 /* FirebaseCreatorMediaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseCreatorMediaService.swift; sourceTree = "<group>"; };
+		D4E5F60100000000000204 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		D4E5F60100000000000206 /* ProfileInformationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileInformationViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +67,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E5F601000000000000000021 /* FirebaseCore in Frameworks */,
+				E5F601000000000000000022 /* FirebaseFirestore in Frameworks */,
+				E5F601000000000000000023 /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -87,6 +103,10 @@
 				C3D4E5F60100000000000203 /* FirebaseCreatorProfileService.swift */,
 				C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */,
 				C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */,
+				D4E5F60100000000000201 /* ProfileInformationView.swift */,
+				D4E5F60100000000000202 /* ProfileInformationViewModel.swift */,
+				D4E5F60100000000000203 /* FirebaseCreatorMediaService.swift */,
+				D4E5F60100000000000204 /* GoogleService-Info.plist */,
 				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
@@ -99,6 +119,7 @@
 			children = (
 				B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */,
 				C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */,
+				D4E5F60100000000000206 /* ProfileInformationViewModelTests.swift */,
 			);
 			path = AixcamTests;
 			sourceTree = "<group>";
@@ -136,6 +157,11 @@
 			dependencies = (
 			);
 			name = Aixcam;
+			packageProductDependencies = (
+				E5F601000000000000000011 /* FirebaseCore */,
+				E5F601000000000000000012 /* FirebaseFirestore */,
+				E5F601000000000000000013 /* FirebaseStorage */,
+			);
 			productName = Aixcam;
 			productReference = A1B2C3D4E5F6010000000206 /* Aixcam.app */;
 			productType = "com.apple.product-type.application";
@@ -186,6 +212,9 @@
 				Base,
 			);
 			mainGroup = A1B2C3D4E5F6010000000401;
+			packageReferences = (
+				E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = A1B2C3D4E5F6010000000404 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -203,6 +232,7 @@
 			files = (
 				A1B2C3D4E5F6010000000104 /* Assets.xcassets in Resources */,
 				B2C3D4E5F601000000000101 /* PrivacyInfo.xcprivacy in Resources */,
+				D4E5F60100000000000104 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -228,6 +258,9 @@
 				C3D4E5F60100000000000103 /* FirebaseCreatorProfileService.swift in Sources */,
 				C3D4E5F60100000000000104 /* CreatorOnboardingViewModel.swift in Sources */,
 				C3D4E5F60100000000000105 /* CreatorOnboardingView.swift in Sources */,
+				D4E5F60100000000000101 /* ProfileInformationView.swift in Sources */,
+				D4E5F60100000000000102 /* ProfileInformationViewModel.swift in Sources */,
+				D4E5F60100000000000103 /* FirebaseCreatorMediaService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -237,6 +270,7 @@
 			files = (
 				B2C3D4E5F601000000000102 /* AuthViewModelTests.swift in Sources */,
 				C3D4E5F60100000000000106 /* CreatorOnboardingViewModelTests.swift in Sources */,
+				D4E5F60100000000000106 /* ProfileInformationViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -385,6 +419,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Aixcam needs photo access so creators can choose a profile photo and cover image during onboarding.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -392,6 +427,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.aixcam.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -418,6 +457,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Aixcam needs photo access so creators can choose a profile photo and cover image during onboarding.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -425,6 +465,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.aixcam.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -513,6 +557,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.15.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E5F601000000000000000011 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		E5F601000000000000000012 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		E5F601000000000000000013 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A1B2C3D4E5F6010000000701 /* Project object */;
 }

@@ -26,6 +26,7 @@ final class CreatorOnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(profile.ownerMemberId, member.id.uuidString)
         XCTAssertEqual(profile.displayName, "Aix Creator")
         XCTAssertEqual(profile.email, "creator@example.com")
+        XCTAssertEqual(profile.username, "")
         XCTAssertTrue(profile.completedSteps.isEmpty)
         XCTAssertFalse(profile.isPublished)
     }

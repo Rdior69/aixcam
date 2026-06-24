@@ -42,6 +42,11 @@ final class CreatorOnboardingViewModel: ObservableObject {
         }
     }
 
+    func applyProfileUpdate(_ profile: CreatorProfile) {
+        self.profile = profile
+        statusMessage = "Profile information saved."
+    }
+
     func select(_ step: CreatorSetupStep) {
         selectedStep = step
     }

@@ -47,7 +47,7 @@ enum CreatorSetupStep: String, CaseIterable, Codable, Identifiable {
     var placeholderDescription: String {
         switch self {
         case .profileInfo:
-            return "Collect display name, bio, category, and public profile basics."
+            return "Add your profile photo, banner, display name, username, bio, location, and social links."
         case .photos:
             return "Prepare profile, gallery, and verification photo upload slots."
         case .fanSubscriptions:

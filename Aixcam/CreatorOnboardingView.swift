@@ -12,7 +12,7 @@ struct CreatorOnboardingView: View {
         VStack(alignment: .leading, spacing: 20) {
             onboardingHeader
             stepSelector
-            CreatorOnboardingStepPlaceholder(step: viewModel.selectedStep)
+            stepContent
             actionBar
         }
         .padding(24)
@@ -44,7 +44,7 @@ struct CreatorOnboardingView: View {
                 }
             }
 
-            Text("Set up the foundation for your creator profile. Each section is a placeholder for this phase.")
+            Text("Complete each setup step to publish your creator profile.")
                 .font(.body)
                 .foregroundStyle(.secondary)
 
@@ -88,6 +88,15 @@ struct CreatorOnboardingView: View {
         }
     }
 
+    @ViewBuilder
+    private var stepContent: some View {
+        if viewModel.selectedStep == .profileInfo {
+            ProfileInformationView(onboardingViewModel: viewModel)
+        } else {
+            CreatorOnboardingStepPlaceholder(step: viewModel.selectedStep)
+        }
+    }
+
     private var actionBar: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
@@ -97,23 +106,25 @@ struct CreatorOnboardingView: View {
                 .buttonStyle(.bordered)
                 .disabled(viewModel.isFirstStep)
 
-                Button(viewModel.isLastStep ? "Review" : "Next") {
-                    viewModel.moveToNextStep()
-                }
-                .buttonStyle(.bordered)
-                .disabled(viewModel.isLastStep)
-
-                Button {
-                    Task {
-                        await viewModel.markSelectedStepComplete()
+                if viewModel.selectedStep != .profileInfo {
+                    Button(viewModel.isLastStep ? "Review" : "Next") {
+                        viewModel.moveToNextStep()
                     }
-                } label: {
-                    Label("Mark placeholder ready", systemImage: "checkmark")
-                        .frame(maxWidth: .infinity)
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isLastStep)
+
+                    Button {
+                        Task {
+                            await viewModel.markSelectedStepComplete()
+                        }
+                    } label: {
+                        Label("Mark placeholder ready", systemImage: "checkmark")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.teal)
+                    .disabled(viewModel.isSaving)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.teal)
-                .disabled(viewModel.isSaving)
             }
 
             Button {
