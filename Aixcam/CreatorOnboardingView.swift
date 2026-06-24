@@ -13,13 +13,15 @@ struct CreatorOnboardingView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             onboardingHeader
-            stepSelector
             if viewModel.selectedStep == .profileInfo {
                 CreatorProfileInfoStepView(viewModel: viewModel)
+                actionBar
+                stepSelector
             } else {
+                stepSelector
                 CreatorOnboardingStepPlaceholder(step: viewModel.selectedStep)
+                actionBar
             }
-            actionBar
         }
         .padding(24)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
@@ -167,75 +169,121 @@ private struct CreatorProfileInfoStepView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Label("Profile Info", systemImage: CreatorSetupStep.profileInfo.systemImage)
-                .font(.title2.weight(.bold))
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Creator Profile Information", systemImage: CreatorSetupStep.profileInfo.systemImage)
+                    .font(.title2.weight(.bold))
 
-            Form {
-                Section("Images") {
-                    CreatorImagePickerRow(
-                        title: "Profile photo",
-                        selectedData: viewModel.profileInfoForm.profilePhotoData,
-                        existingURL: viewModel.profile.profilePhotoURL,
-                        item: $profilePhotoItem
-                    )
+                Text("Enter the creator details fans will see on the public profile.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
 
-                    CreatorImagePickerRow(
-                        title: "Cover/banner image",
-                        selectedData: viewModel.profileInfoForm.coverImageData,
-                        existingURL: viewModel.profile.coverImageURL,
-                        item: $coverImageItem
-                    )
-                }
+            ProfileInfoCard(title: "Images") {
+                CreatorImagePickerRow(
+                    title: "Profile photo",
+                    selectedData: viewModel.profileInfoForm.profilePhotoData,
+                    existingURL: viewModel.profile.profilePhotoURL,
+                    item: $profilePhotoItem
+                )
 
-                Section("Identity") {
-                    TextField("Display name", text: $viewModel.profileInfoForm.displayName)
-                        .textContentType(.name)
-                    TextField("Username", text: $viewModel.profileInfoForm.username)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    TextField("Location", text: $viewModel.profileInfoForm.location)
-                }
+                Divider().opacity(0.35)
 
-                Section("About") {
-                    TextEditor(text: $viewModel.profileInfoForm.aboutMe)
-                        .frame(minHeight: 110)
-                        .overlay(alignment: .topLeading) {
-                            if viewModel.profileInfoForm.aboutMe.isEmpty {
-                                Text("About Me description")
-                                    .foregroundStyle(.secondary)
-                                    .padding(.top, 8)
-                                    .padding(.leading, 4)
-                            }
-                        }
-                }
+                CreatorImagePickerRow(
+                    title: "Cover/banner image",
+                    selectedData: viewModel.profileInfoForm.coverImageData,
+                    existingURL: viewModel.profile.coverImageURL,
+                    item: $coverImageItem
+                )
+            }
 
-                Section("Links") {
-                    TextField("Website link", text: $viewModel.profileInfoForm.websiteURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                    TextField("Instagram link", text: $viewModel.profileInfoForm.instagramURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                    TextField("TikTok link", text: $viewModel.profileInfoForm.tiktokURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                    TextField("X/Twitter link", text: $viewModel.profileInfoForm.xTwitterURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                }
+            ProfileInfoCard(title: "Identity") {
+                ProfileInfoTextField(
+                    title: "Display name",
+                    placeholder: "Aix Creator",
+                    text: $viewModel.profileInfoForm.displayName
+                )
+                .textContentType(.name)
 
-                if viewModel.validationErrors.isEmpty == false {
-                    Section("Required before continuing") {
-                        ForEach(viewModel.validationErrors, id: \.self) { error in
-                            Label(error, systemImage: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.red)
+                ProfileInfoTextField(
+                    title: "Username",
+                    placeholder: "aix_creator",
+                    text: $viewModel.profileInfoForm.username
+                )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+
+                ProfileInfoTextField(
+                    title: "Location",
+                    placeholder: "Los Angeles, CA",
+                    text: $viewModel.profileInfoForm.location
+                )
+            }
+
+            ProfileInfoCard(title: "About Me") {
+                TextEditor(text: $viewModel.profileInfoForm.aboutMe)
+                    .frame(minHeight: 120)
+                    .padding(8)
+                    .scrollContentBackground(.hidden)
+                    .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(alignment: .topLeading) {
+                        if viewModel.profileInfoForm.aboutMe.isEmpty {
+                            Text("About Me description")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 16)
+                                .padding(.leading, 14)
                         }
                     }
-                }
             }
-            .scrollContentBackground(.hidden)
-            .frame(minHeight: 640)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            ProfileInfoCard(title: "Links") {
+                ProfileInfoTextField(
+                    title: "Website link",
+                    placeholder: "https://example.com",
+                    text: $viewModel.profileInfoForm.websiteURL
+                )
+                .keyboardType(.URL)
+                .textInputAutocapitalization(.never)
+
+                ProfileInfoTextField(
+                    title: "Instagram link",
+                    placeholder: "https://instagram.com/username",
+                    text: $viewModel.profileInfoForm.instagramURL
+                )
+                .keyboardType(.URL)
+                .textInputAutocapitalization(.never)
+
+                ProfileInfoTextField(
+                    title: "TikTok link",
+                    placeholder: "https://tiktok.com/@username",
+                    text: $viewModel.profileInfoForm.tiktokURL
+                )
+                .keyboardType(.URL)
+                .textInputAutocapitalization(.never)
+
+                ProfileInfoTextField(
+                    title: "X/Twitter link",
+                    placeholder: "https://x.com/username",
+                    text: $viewModel.profileInfoForm.xTwitterURL
+                )
+                .keyboardType(.URL)
+                .textInputAutocapitalization(.never)
+            }
+
+            if viewModel.validationErrors.isEmpty == false {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Required before continuing")
+                        .font(.headline)
+
+                    ForEach(viewModel.validationErrors, id: \.self) { error in
+                        Label(error, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                            .font(.subheadline)
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.red.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
 
             if let errorMessage = viewModel.errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
@@ -275,6 +323,50 @@ private struct CreatorProfileInfoStepView: View {
             }
         } catch {
             viewModel.setProfileInfoError("We could not load the selected image.")
+        }
+    }
+}
+
+private struct ProfileInfoCard<Content: View>: View {
+    let title: String
+    private let content: Content
+
+    init(title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.headline)
+
+            content
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(.white.opacity(0.12), lineWidth: 1)
+        }
+    }
+}
+
+private struct ProfileInfoTextField: View {
+    let title: String
+    let placeholder: String
+    @Binding var text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+                .padding(12)
+                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
     }
 }
