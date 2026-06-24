@@ -11,6 +11,10 @@
 		A1B2C3D4E5F6010000000102 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000202 /* ContentView.swift */; };
 		A1B2C3D4E5F6010000000103 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000203 /* AuthViewModel.swift */; };
 		A1B2C3D4E5F6010000000104 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000204 /* Assets.xcassets */; };
+		A1B2C3D4E5F6010000000105 /* CreatorModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000207 /* CreatorModels.swift */; };
+		A1B2C3D4E5F6010000000106 /* CreatorBackendService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000208 /* CreatorBackendService.swift */; };
+		A1B2C3D4E5F6010000000107 /* CreatorSetupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000209 /* CreatorSetupViewModel.swift */; };
+		A1B2C3D4E5F6010000000108 /* CreatorOnboardingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000210 /* CreatorOnboardingViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +24,10 @@
 		A1B2C3D4E5F6010000000204 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E5F6010000000205 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A1B2C3D4E5F6010000000206 /* Aixcam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Aixcam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1B2C3D4E5F6010000000207 /* CreatorModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorModels.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6010000000208 /* CreatorBackendService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorBackendService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6010000000209 /* CreatorSetupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorSetupViewModel.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6010000000210 /* CreatorOnboardingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -47,6 +55,10 @@
 				A1B2C3D4E5F6010000000201 /* AixcamApp.swift */,
 				A1B2C3D4E5F6010000000202 /* ContentView.swift */,
 				A1B2C3D4E5F6010000000203 /* AuthViewModel.swift */,
+				A1B2C3D4E5F6010000000207 /* CreatorModels.swift */,
+				A1B2C3D4E5F6010000000208 /* CreatorBackendService.swift */,
+				A1B2C3D4E5F6010000000209 /* CreatorSetupViewModel.swift */,
+				A1B2C3D4E5F6010000000210 /* CreatorOnboardingViews.swift */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
 			);
@@ -141,6 +153,10 @@
 				A1B2C3D4E5F6010000000101 /* AixcamApp.swift in Sources */,
 				A1B2C3D4E5F6010000000102 /* ContentView.swift in Sources */,
 				A1B2C3D4E5F6010000000103 /* AuthViewModel.swift in Sources */,
+				A1B2C3D4E5F6010000000105 /* CreatorModels.swift in Sources */,
+				A1B2C3D4E5F6010000000106 /* CreatorBackendService.swift in Sources */,
+				A1B2C3D4E5F6010000000107 /* CreatorSetupViewModel.swift in Sources */,
+				A1B2C3D4E5F6010000000108 /* CreatorOnboardingViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
