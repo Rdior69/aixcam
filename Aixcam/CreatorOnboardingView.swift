@@ -5,6 +5,7 @@ import UIKit
 struct CreatorOnboardingView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @StateObject private var viewModel: CreatorOnboardingViewModel
+    @State private var isShowingSettings = false
 
     init(member: Member, service: CreatorProfileServicing = FirebaseCreatorProfileService()) {
         _viewModel = StateObject(wrappedValue: CreatorOnboardingViewModel(member: member, service: service))
@@ -32,6 +33,12 @@ struct CreatorOnboardingView: View {
         .task {
             await viewModel.loadProfile()
         }
+        .sheet(isPresented: $isShowingSettings) {
+            CreatorSettingsView(profile: viewModel.profile) {
+                viewModel.select(.profileInfo)
+            }
+            .environmentObject(authViewModel)
+        }
     }
 
     private var onboardingHeader: some View {
@@ -50,6 +57,19 @@ struct CreatorOnboardingView: View {
                         .font(.headline)
                         .foregroundStyle(.secondary)
                 }
+
+                Spacer()
+
+                Button {
+                    isShowingSettings = true
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
+                        .labelStyle(.iconOnly)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Creator settings")
+                .accessibilityHint("Opens creator settings.")
             }
 
             Text("Set up the foundation for your creator profile. Each section is a placeholder for this phase.")

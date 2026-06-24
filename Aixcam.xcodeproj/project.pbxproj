@@ -19,6 +19,9 @@
 		C3D4E5F60100000000000104 /* CreatorOnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */; };
 		C3D4E5F60100000000000105 /* CreatorOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */; };
 		C3D4E5F60100000000000106 /* CreatorOnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */; };
+		D4E5F6010000000000000101 /* CreatorSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6010000000000000201 /* CreatorSettings.swift */; };
+		D4E5F6010000000000000102 /* CreatorSettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6010000000000000202 /* CreatorSettingsViewModel.swift */; };
+		D4E5F6010000000000000103 /* CreatorSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6010000000000000203 /* CreatorSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +50,9 @@
 		C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViewModel.swift; sourceTree = "<group>"; };
 		C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingView.swift; sourceTree = "<group>"; };
 		C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViewModelTests.swift; sourceTree = "<group>"; };
+		D4E5F6010000000000000201 /* CreatorSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorSettings.swift; sourceTree = "<group>"; };
+		D4E5F6010000000000000202 /* CreatorSettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorSettingsViewModel.swift; sourceTree = "<group>"; };
+		D4E5F6010000000000000203 /* CreatorSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +93,9 @@
 				C3D4E5F60100000000000203 /* FirebaseCreatorProfileService.swift */,
 				C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */,
 				C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */,
+				D4E5F6010000000000000201 /* CreatorSettings.swift */,
+				D4E5F6010000000000000202 /* CreatorSettingsViewModel.swift */,
+				D4E5F6010000000000000203 /* CreatorSettingsView.swift */,
 				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
@@ -228,6 +237,9 @@
 				C3D4E5F60100000000000103 /* FirebaseCreatorProfileService.swift in Sources */,
 				C3D4E5F60100000000000104 /* CreatorOnboardingViewModel.swift in Sources */,
 				C3D4E5F60100000000000105 /* CreatorOnboardingView.swift in Sources */,
+				D4E5F6010000000000000101 /* CreatorSettings.swift in Sources */,
+				D4E5F6010000000000000102 /* CreatorSettingsViewModel.swift in Sources */,
+				D4E5F6010000000000000103 /* CreatorSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

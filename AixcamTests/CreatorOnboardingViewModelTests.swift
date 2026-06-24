@@ -84,6 +84,28 @@ final class CreatorOnboardingViewModelTests: XCTestCase {
         ])
         XCTAssertEqual(service.profile?.id, member.id.uuidString)
     }
+
+    func testCreatorSettingsDefaultsAndSummary() {
+        let profile = CreatorProfile(
+            id: UUID().uuidString,
+            ownerMemberId: UUID().uuidString,
+            displayName: "Aix Creator",
+            email: "creator@example.com",
+            username: "aix_creator"
+        )
+        let viewModel = CreatorSettingsViewModel(profile: profile)
+
+        XCTAssertEqual(viewModel.profileStatusText, "Draft profile")
+        XCTAssertEqual(viewModel.notificationSummary, "2 notification options enabled")
+
+        viewModel.settings.isProfilePublic = true
+        viewModel.settings.pushNotificationsEnabled = true
+        viewModel.saveLocalSettings()
+
+        XCTAssertEqual(viewModel.profileStatusText, "Public profile")
+        XCTAssertEqual(viewModel.notificationSummary, "3 notification options enabled")
+        XCTAssertEqual(viewModel.statusMessage, "Creator settings saved locally for this prototype.")
+    }
 }
 
 private final class MemoryCreatorProfileService: CreatorProfileServicing {
