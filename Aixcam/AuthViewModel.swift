@@ -1,5 +1,7 @@
 import Combine
+import CryptoKit
 import Foundation
+import Security
 
 struct Member: Codable, Identifiable, Equatable {
     let id: UUID
@@ -39,45 +41,103 @@ enum AuthStatus: Equatable {
 
 final class AuthViewModel: ObservableObject {
     @Published private(set) var members: [Member] = []
+    @Published private(set) var currentMember: Member?
     @Published var status: AuthStatus = .idle
 
     private let storageKey = "aixcam.members"
+    private let memberStore: SecureMemberStoring
+    private var storedMembers: [StoredMember] = []
 
-    init() {
+    var isAuthenticated: Bool {
+        currentMember != nil
+    }
+
+    init(memberStore: SecureMemberStoring = KeychainMemberStore()) {
+        self.memberStore = memberStore
         loadMembers()
     }
 
-    func signUp(name: String, email: String, accountType: AccountType, password: String) {
+    @discardableResult
+    func signUp(name: String, email: String, accountType: AccountType, password: String) -> Bool {
         let cleanedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanedEmail = normalize(email)
 
         guard validate(name: cleanedName, email: cleanedEmail, password: password) else {
-            return
+            return false
         }
 
-        guard members.contains(where: { $0.email == cleanedEmail }) == false else {
+        guard storedMembers.contains(where: { $0.member.email == cleanedEmail }) == false else {
             status = .error("That email is already signed up. Please log in instead.")
-            return
+            return false
         }
 
-        members.append(Member(name: cleanedName, email: cleanedEmail, accountType: accountType))
-        saveMembers()
-        status = .success("Your Aixcam account was created. You can now log in as a member.")
+        let member = Member(name: cleanedName, email: cleanedEmail, accountType: accountType)
+        let salt = Self.makeSalt()
+        let storedMember = StoredMember(
+            member: member,
+            passwordSalt: salt.base64EncodedString(),
+            passwordHash: Self.hash(password: password, salt: salt)
+        )
+
+        let previousMembers = storedMembers
+        storedMembers.append(storedMember)
+        guard saveMembers() else {
+            storedMembers = previousMembers
+            refreshMembers()
+            return false
+        }
+
+        currentMember = member
+        status = .success("Your Aixcam account was created and you are signed in.")
+        return true
     }
 
-    func login(email: String, password: String) {
+    @discardableResult
+    func login(email: String, password: String) -> Bool {
         let cleanedEmail = normalize(email)
 
         guard validate(email: cleanedEmail, password: password) else {
-            return
+            return false
         }
 
-        guard let member = members.first(where: { $0.email == cleanedEmail }) else {
+        guard let storedMember = storedMembers.first(where: { $0.member.email == cleanedEmail }) else {
             status = .error("We could not find that member email. Create a new account to join Aixcam.")
-            return
+            return false
         }
 
-        status = .success("Welcome back, \(member.name). Your Aixcam member account is ready.")
+        guard Self.verify(password: password, storedMember: storedMember) else {
+            status = .error("That password does not match this Aixcam account.")
+            return false
+        }
+
+        currentMember = storedMember.member
+        status = .success("Welcome back, \(storedMember.member.name).")
+        return true
+    }
+
+    func logout() {
+        currentMember = nil
+        status = .idle
+    }
+
+    @discardableResult
+    func deleteCurrentAccount() -> Bool {
+        guard let currentMember else {
+            status = .error("Log in before deleting an account.")
+            return false
+        }
+
+        let previousMembers = storedMembers
+        storedMembers.removeAll { $0.member.email == currentMember.email }
+        guard saveMembers() else {
+            storedMembers = previousMembers
+            refreshMembers()
+            return false
+        }
+
+        self.currentMember = nil
+        status = .success("Your Aixcam account was deleted from this device.")
+        return true
     }
 
     func resetStatus() {
@@ -94,7 +154,9 @@ final class AuthViewModel: ObservableObject {
     }
 
     private func validate(email: String, password: String) -> Bool {
-        guard email.contains("@"), email.contains(".") else {
+        let emailPattern = #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#
+        let emailRange = email.range(of: emailPattern, options: [.regularExpression, .caseInsensitive])
+        guard emailRange == email.startIndex..<email.endIndex else {
             status = .error("Enter a valid email address.")
             return false
         }
@@ -112,23 +174,140 @@ final class AuthViewModel: ObservableObject {
     }
 
     private func loadMembers() {
-        guard let data = UserDefaults.standard.data(forKey: storageKey) else {
+        guard let data = memberStore.loadData(for: storageKey) else {
+            refreshMembers()
             return
         }
 
         do {
-            members = try JSONDecoder().decode([Member].self, from: data)
+            storedMembers = try JSONDecoder().decode([StoredMember].self, from: data)
         } catch {
-            members = []
+            storedMembers = []
+        }
+
+        refreshMembers()
+    }
+
+    private func saveMembers() -> Bool {
+        do {
+            let data = try JSONEncoder().encode(storedMembers)
+            if storedMembers.isEmpty {
+                try memberStore.deleteData(for: storageKey)
+            } else {
+                try memberStore.saveData(data, for: storageKey)
+            }
+            refreshMembers()
+            return true
+        } catch {
+            status = .error("We could not save the new member account. Please try again.")
+            return false
         }
     }
 
-    private func saveMembers() {
-        do {
-            let data = try JSONEncoder().encode(members)
-            UserDefaults.standard.set(data, forKey: storageKey)
-        } catch {
-            status = .error("We could not save the new member account. Please try again.")
+    private func refreshMembers() {
+        members = storedMembers.map(\.member)
+    }
+
+    private static func makeSalt() -> Data {
+        var bytes = [UInt8](repeating: 0, count: 16)
+        let count = bytes.count
+        let status = bytes.withUnsafeMutableBytes {
+            SecRandomCopyBytes(kSecRandomDefault, count, $0.baseAddress!)
         }
+        if status != errSecSuccess {
+            bytes = UUID().uuidString.utf8.map { UInt8($0) }
+        }
+        return Data(bytes)
+    }
+
+    private static func hash(password: String, salt: Data) -> String {
+        var input = Data()
+        input.append(salt)
+        input.append(Data(password.utf8))
+        let digest = SHA256.hash(data: input)
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func verify(password: String, storedMember: StoredMember) -> Bool {
+        guard let salt = Data(base64Encoded: storedMember.passwordSalt) else {
+            return false
+        }
+
+        return hash(password: password, salt: salt) == storedMember.passwordHash
+    }
+}
+
+private struct StoredMember: Codable, Equatable {
+    let member: Member
+    let passwordSalt: String
+    let passwordHash: String
+}
+
+protocol SecureMemberStoring {
+    func loadData(for key: String) -> Data?
+    func saveData(_ data: Data, for key: String) throws
+    func deleteData(for key: String) throws
+}
+
+enum SecureMemberStoreError: Error {
+    case unexpectedStatus(OSStatus)
+}
+
+final class KeychainMemberStore: SecureMemberStoring {
+    private let service: String
+
+    init(service: String = Bundle.main.bundleIdentifier ?? "com.aixcam.app") {
+        self.service = service
+    }
+
+    func loadData(for key: String) -> Data? {
+        var query = baseQuery(for: key)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        guard status == errSecSuccess else {
+            return nil
+        }
+
+        return item as? Data
+    }
+
+    func saveData(_ data: Data, for key: String) throws {
+        let query = baseQuery(for: key)
+        let attributes: [String: Any] = [kSecValueData as String: data]
+
+        let updateStatus = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if updateStatus == errSecSuccess {
+            return
+        }
+
+        guard updateStatus == errSecItemNotFound else {
+            throw SecureMemberStoreError.unexpectedStatus(updateStatus)
+        }
+
+        var addQuery = query
+        attributes.forEach { addQuery[$0.key] = $0.value }
+        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
+        guard addStatus == errSecSuccess else {
+            throw SecureMemberStoreError.unexpectedStatus(addStatus)
+        }
+    }
+
+    func deleteData(for key: String) throws {
+        let status = SecItemDelete(baseQuery(for: key) as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else {
+            throw SecureMemberStoreError.unexpectedStatus(status)
+        }
+    }
+
+    private func baseQuery(for key: String) -> [String: Any] {
+        [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key
+        ]
     }
 }

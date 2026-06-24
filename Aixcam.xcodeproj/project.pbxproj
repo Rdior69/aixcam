@@ -11,7 +11,33 @@
 		A1B2C3D4E5F6010000000102 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000202 /* ContentView.swift */; };
 		A1B2C3D4E5F6010000000103 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000203 /* AuthViewModel.swift */; };
 		A1B2C3D4E5F6010000000104 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000204 /* Assets.xcassets */; };
+		B2C3D4E5F601000000000101 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */; };
+		B2C3D4E5F601000000000102 /* AuthViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */; };
+		C3D4E5F60100000000000101 /* CreatorSetupStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000201 /* CreatorSetupStep.swift */; };
+		C3D4E5F60100000000000102 /* CreatorProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000202 /* CreatorProfile.swift */; };
+		C3D4E5F60100000000000103 /* FirebaseCreatorProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000203 /* FirebaseCreatorProfileService.swift */; };
+		C3D4E5F60100000000000104 /* CreatorOnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */; };
+		C3D4E5F60100000000000105 /* CreatorOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */; };
+		C3D4E5F60100000000000106 /* CreatorOnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */; };
+		D4E5F60100000000000101 /* ProfileInformationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000201 /* ProfileInformationView.swift */; };
+		D4E5F60100000000000102 /* ProfileInformationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000202 /* ProfileInformationViewModel.swift */; };
+		D4E5F60100000000000103 /* FirebaseCreatorMediaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000203 /* FirebaseCreatorMediaService.swift */; };
+		D4E5F60100000000000104 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000204 /* GoogleService-Info.plist */; };
+		D4E5F60100000000000106 /* ProfileInformationViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60100000000000206 /* ProfileInformationViewModelTests.swift */; };
+		E5F601000000000000000021 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = E5F601000000000000000011 /* FirebaseCore */; };
+		E5F601000000000000000022 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = E5F601000000000000000012 /* FirebaseFirestore */; };
+		E5F601000000000000000023 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = E5F601000000000000000013 /* FirebaseStorage */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B2C3D4E5F601000000000702 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A1B2C3D4E5F6010000000701 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1B2C3D4E5F6010000000501;
+			remoteInfo = Aixcam;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A1B2C3D4E5F6010000000201 /* AixcamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AixcamApp.swift; sourceTree = "<group>"; };
@@ -20,10 +46,34 @@
 		A1B2C3D4E5F6010000000204 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1B2C3D4E5F6010000000205 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A1B2C3D4E5F6010000000206 /* Aixcam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Aixcam.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModelTests.swift; sourceTree = "<group>"; };
+		B2C3D4E5F601000000000203 /* AixcamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AixcamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C3D4E5F60100000000000201 /* CreatorSetupStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorSetupStep.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000202 /* CreatorProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorProfile.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000203 /* FirebaseCreatorProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseCreatorProfileService.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViewModel.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingView.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViewModelTests.swift; sourceTree = "<group>"; };
+		D4E5F60100000000000201 /* ProfileInformationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileInformationView.swift; sourceTree = "<group>"; };
+		D4E5F60100000000000202 /* ProfileInformationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileInformationViewModel.swift; sourceTree = "<group>"; };
+		D4E5F60100000000000203 /* FirebaseCreatorMediaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseCreatorMediaService.swift; sourceTree = "<group>"; };
+		D4E5F60100000000000204 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		D4E5F60100000000000206 /* ProfileInformationViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileInformationViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A1B2C3D4E5F6010000000301 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E5F601000000000000000021 /* FirebaseCore in Frameworks */,
+				E5F601000000000000000022 /* FirebaseFirestore in Frameworks */,
+				E5F601000000000000000023 /* FirebaseStorage in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B2C3D4E5F601000000000301 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -37,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F6010000000402 /* Aixcam */,
+				B2C3D4E5F601000000000401 /* AixcamTests */,
 				A1B2C3D4E5F6010000000404 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -47,10 +98,30 @@
 				A1B2C3D4E5F6010000000201 /* AixcamApp.swift */,
 				A1B2C3D4E5F6010000000202 /* ContentView.swift */,
 				A1B2C3D4E5F6010000000203 /* AuthViewModel.swift */,
+				C3D4E5F60100000000000201 /* CreatorSetupStep.swift */,
+				C3D4E5F60100000000000202 /* CreatorProfile.swift */,
+				C3D4E5F60100000000000203 /* FirebaseCreatorProfileService.swift */,
+				C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */,
+				C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */,
+				D4E5F60100000000000201 /* ProfileInformationView.swift */,
+				D4E5F60100000000000202 /* ProfileInformationViewModel.swift */,
+				D4E5F60100000000000203 /* FirebaseCreatorMediaService.swift */,
+				D4E5F60100000000000204 /* GoogleService-Info.plist */,
+				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
 			);
 			path = Aixcam;
+			sourceTree = "<group>";
+		};
+		B2C3D4E5F601000000000401 /* AixcamTests */ = {
+			isa = PBXGroup;
+			children = (
+				B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */,
+				C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */,
+				D4E5F60100000000000206 /* ProfileInformationViewModelTests.swift */,
+			);
+			path = AixcamTests;
 			sourceTree = "<group>";
 		};
 		A1B2C3D4E5F6010000000403 /* Preview Content */ = {
@@ -65,6 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D4E5F6010000000206 /* Aixcam.app */,
+				B2C3D4E5F601000000000203 /* AixcamTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -85,9 +157,32 @@
 			dependencies = (
 			);
 			name = Aixcam;
+			packageProductDependencies = (
+				E5F601000000000000000011 /* FirebaseCore */,
+				E5F601000000000000000012 /* FirebaseFirestore */,
+				E5F601000000000000000013 /* FirebaseStorage */,
+			);
 			productName = Aixcam;
 			productReference = A1B2C3D4E5F6010000000206 /* Aixcam.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B2C3D4E5F601000000000501 /* AixcamTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B2C3D4E5F601000000000801 /* Build configuration list for PBXNativeTarget "AixcamTests" */;
+			buildPhases = (
+				B2C3D4E5F601000000000601 /* Sources */,
+				B2C3D4E5F601000000000301 /* Frameworks */,
+				B2C3D4E5F601000000000602 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B2C3D4E5F601000000000701 /* PBXTargetDependency */,
+			);
+			name = AixcamTests;
+			productName = AixcamTests;
+			productReference = B2C3D4E5F601000000000203 /* AixcamTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -102,6 +197,10 @@
 					A1B2C3D4E5F6010000000501 = {
 						CreatedOnToolsVersion = 15.3;
 					};
+					B2C3D4E5F601000000000501 = {
+						CreatedOnToolsVersion = 15.3;
+						TestTargetID = A1B2C3D4E5F6010000000501;
+					};
 				};
 			};
 			buildConfigurationList = A1B2C3D4E5F6010000000801 /* Build configuration list for PBXProject "Aixcam" */;
@@ -113,11 +212,15 @@
 				Base,
 			);
 			mainGroup = A1B2C3D4E5F6010000000401;
+			packageReferences = (
+				E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = A1B2C3D4E5F6010000000404 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				A1B2C3D4E5F6010000000501 /* Aixcam */,
+				B2C3D4E5F601000000000501 /* AixcamTests */,
 			);
 		};
 /* End PBXProject section */
@@ -128,6 +231,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				A1B2C3D4E5F6010000000104 /* Assets.xcassets in Resources */,
+				B2C3D4E5F601000000000101 /* PrivacyInfo.xcprivacy in Resources */,
+				D4E5F60100000000000104 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B2C3D4E5F601000000000602 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,10 +253,36 @@
 				A1B2C3D4E5F6010000000101 /* AixcamApp.swift in Sources */,
 				A1B2C3D4E5F6010000000102 /* ContentView.swift in Sources */,
 				A1B2C3D4E5F6010000000103 /* AuthViewModel.swift in Sources */,
+				C3D4E5F60100000000000101 /* CreatorSetupStep.swift in Sources */,
+				C3D4E5F60100000000000102 /* CreatorProfile.swift in Sources */,
+				C3D4E5F60100000000000103 /* FirebaseCreatorProfileService.swift in Sources */,
+				C3D4E5F60100000000000104 /* CreatorOnboardingViewModel.swift in Sources */,
+				C3D4E5F60100000000000105 /* CreatorOnboardingView.swift in Sources */,
+				D4E5F60100000000000101 /* ProfileInformationView.swift in Sources */,
+				D4E5F60100000000000102 /* ProfileInformationViewModel.swift in Sources */,
+				D4E5F60100000000000103 /* FirebaseCreatorMediaService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B2C3D4E5F601000000000601 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B2C3D4E5F601000000000102 /* AuthViewModelTests.swift in Sources */,
+				C3D4E5F60100000000000106 /* CreatorOnboardingViewModelTests.swift in Sources */,
+				D4E5F60100000000000106 /* ProfileInformationViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B2C3D4E5F601000000000701 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1B2C3D4E5F6010000000501 /* Aixcam */;
+			targetProxy = B2C3D4E5F601000000000702 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A1B2C3D4E5F6010000000901 /* Debug */ = {
@@ -276,10 +414,12 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Aixcam;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Aixcam needs photo access so creators can choose a profile photo and cover image during onboarding.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -287,6 +427,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.aixcam.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -308,10 +452,12 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Aixcam;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Aixcam needs photo access so creators can choose a profile photo and cover image during onboarding.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -319,6 +465,10 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.aixcam.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -327,6 +477,52 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		B2C3D4E5F601000000000901 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aixcam.appTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Aixcam.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Aixcam";
+			};
+			name = Debug;
+		};
+		B2C3D4E5F601000000000902 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aixcam.appTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Aixcam.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Aixcam";
 			};
 			name = Release;
 		};
@@ -351,7 +547,45 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B2C3D4E5F601000000000801 /* Build configuration list for PBXNativeTarget "AixcamTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B2C3D4E5F601000000000901 /* Debug */,
+				B2C3D4E5F601000000000902 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.15.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E5F601000000000000000011 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		E5F601000000000000000012 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		E5F601000000000000000013 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E5F601000000000000000001 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A1B2C3D4E5F6010000000701 /* Project object */;
 }
