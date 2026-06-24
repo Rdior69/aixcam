@@ -1,0 +1,119 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function publishedCreator(uid) {
+      return exists(/databases/$(database)/documents/creatorProfiles/$(uid)) &&
+        get(/databases/$(database)/documents/creatorProfiles/$(uid)).data.isPublished == true;
+    }
+
+    function validUserCreate(uid) {
+      return request.resource.data.keys().hasOnly([
+        'uid',
+        'displayName',
+        'email',
+        'accountType',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      request.resource.data.uid == uid;
+    }
+
+    function validCreatorProfile(uid) {
+      return request.resource.data.keys().hasOnly([
+        'ownerId',
+        'profilePhotoPath',
+        'coverImagePath',
+        'displayName',
+        'username',
+        'biography',
+        'location',
+        'websiteLinks',
+        'socialLinks',
+        'theme',
+        'customProfileURL',
+        'appearanceNotes',
+        'categories',
+        'aiTools',
+        'completedSteps',
+        'isPublished',
+        'updatedAt'
+      ]) &&
+      request.resource.data.ownerId == uid &&
+      request.resource.data.displayName is string &&
+      request.resource.data.username is string &&
+      request.resource.data.websiteLinks is list &&
+      request.resource.data.socialLinks is list &&
+      request.resource.data.categories is list &&
+      request.resource.data.aiTools is list;
+    }
+
+    match /users/{uid} {
+      allow create: if isOwner(uid) && validUserCreate(uid);
+      allow read, update, delete: if isOwner(uid);
+    }
+
+    match /creatorProfiles/{uid} {
+      allow read: if isOwner(uid) || resource.data.isPublished == true;
+      allow create, update: if isOwner(uid) && validCreatorProfile(uid);
+      allow delete: if isOwner(uid);
+
+      match /media/{mediaId} {
+        allow read: if isOwner(uid) || publishedCreator(uid);
+        allow create, update: if isOwner(uid) &&
+          request.resource.data.ownerId == uid &&
+          request.resource.data.title is string &&
+          request.resource.data.kind in ['Photo', 'Video', 'Album'] &&
+          request.resource.data.category is string &&
+          request.resource.data.storagePath is string &&
+          request.resource.data.sortOrder is int;
+        allow delete: if isOwner(uid);
+      }
+
+      match /subscriptionTiers/{tierId} {
+        allow read: if isOwner(uid) || publishedCreator(uid);
+        allow create, update: if isOwner(uid) &&
+          request.resource.data.ownerId == uid &&
+          request.resource.data.name is string &&
+          request.resource.data.monthlyPrice is number &&
+          request.resource.data.monthlyPrice >= 0 &&
+          request.resource.data.benefits is list &&
+          request.resource.data.isEnabled is bool;
+        allow delete: if isOwner(uid);
+      }
+
+      match /analytics/{document=**} {
+        allow read: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /aiJobs/{jobId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) &&
+          request.resource.data.ownerId == uid &&
+          request.resource.data.status in ['queued', 'processing', 'complete', 'failed'];
+        allow update, delete: if false;
+      }
+    }
+
+    match /cloudFunctionRequests/{requestId} {
+      allow create: if signedIn() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.type in ['caption', 'thumbnail', 'upscale', 'backgroundRemoval', 'batchEdit'];
+      allow read: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

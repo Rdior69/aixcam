@@ -1,0 +1,20 @@
+{
+  "name": "functions",
+  "version": "1.0.0",
+  "description": "Aixcam Firebase Cloud Functions for creator onboarding.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "node --check index.js",
+    "test": "npm run lint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "firebase-admin": "^13.10.0",
+    "firebase-functions": "^7.2.5"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
+}

@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isImage() {
+      return request.resource != null &&
+        request.resource.contentType.matches('image/.*') &&
+        request.resource.size < 10 * 1024 * 1024;
+    }
+
+    function isVideo() {
+      return request.resource != null &&
+        request.resource.contentType.matches('video/.*') &&
+        request.resource.size < 512 * 1024 * 1024;
+    }
+
+    match /creators/{uid}/profile/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(uid) && isImage();
+    }
+
+    match /creators/{uid}/covers/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(uid) && isImage();
+    }
+
+    match /creators/{uid}/media/photos/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(uid) && isImage();
+    }
+
+    match /creators/{uid}/media/videos/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(uid) && isVideo();
+    }
+
+    match /creators/{uid}/albums/{albumId}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(uid) && (isImage() || isVideo());
+    }
+
+    match /creators/{uid}/ai-output/{fileName} {
+      allow read: if isOwner(uid);
+      allow write: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
