@@ -21,24 +21,25 @@ final class FirebaseCreatorProfileService: CreatorProfileServicing {
     private let storageRoot: StorageReference
 #endif
 
-    init(
-#if canImport(FirebaseFirestore)
-        collection: CollectionReference = Firestore.firestore().collection("creatorProfiles")
-#endif
 #if canImport(FirebaseFirestore) && canImport(FirebaseStorage)
-        ,
-#endif
-#if canImport(FirebaseStorage)
+    init(
+        collection: CollectionReference = Firestore.firestore().collection("creatorProfiles"),
         storageRoot: StorageReference = Storage.storage().reference().child("creatorProfiles")
-#endif
     ) {
-#if canImport(FirebaseFirestore)
         self.collection = collection
-#endif
-#if canImport(FirebaseStorage)
         self.storageRoot = storageRoot
-#endif
     }
+#elseif canImport(FirebaseFirestore)
+    init(collection: CollectionReference = Firestore.firestore().collection("creatorProfiles")) {
+        self.collection = collection
+    }
+#elseif canImport(FirebaseStorage)
+    init(storageRoot: StorageReference = Storage.storage().reference().child("creatorProfiles")) {
+        self.storageRoot = storageRoot
+    }
+#else
+    init() {}
+#endif
 
     func fetchProfile(for id: String) async throws -> CreatorProfile? {
 #if canImport(FirebaseFirestore)
