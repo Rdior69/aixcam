@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "creatorDrafts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "profile.username", "order": "ASCENDING" },
+        { "fieldPath": "lastUpdatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "creatorDrafts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subscriptions.premiumTier.price", "order": "ASCENDING" },
+        { "fieldPath": "subscriptions.vipTier.price", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
