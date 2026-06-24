@@ -1,3 +1,4 @@
+import Combine
 import CryptoKit
 import Foundation
 import Security
@@ -209,8 +210,9 @@ final class AuthViewModel: ObservableObject {
 
     private static func makeSalt() -> Data {
         var bytes = [UInt8](repeating: 0, count: 16)
+        let count = bytes.count
         let status = bytes.withUnsafeMutableBytes {
-            SecRandomCopyBytes(kSecRandomDefault, bytes.count, $0.baseAddress!)
+            SecRandomCopyBytes(kSecRandomDefault, count, $0.baseAddress!)
         }
         if status != errSecSuccess {
             bytes = UUID().uuidString.utf8.map { UInt8($0) }
