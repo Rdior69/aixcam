@@ -4,10 +4,15 @@ import SwiftUI
 struct AixcamApp: App {
     @StateObject private var authViewModel = AuthViewModel()
 
+    init() {
+        FirebaseManager.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppRootView()
                 .environmentObject(authViewModel)
+                .preferredColorScheme(nil)
         }
     }
 }
