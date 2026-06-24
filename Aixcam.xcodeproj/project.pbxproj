@@ -13,6 +13,12 @@
 		A1B2C3D4E5F6010000000104 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6010000000204 /* Assets.xcassets */; };
 		B2C3D4E5F601000000000101 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */; };
 		B2C3D4E5F601000000000102 /* AuthViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */; };
+		C3D4E5F60100000000000101 /* CreatorSetupStep.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000201 /* CreatorSetupStep.swift */; };
+		C3D4E5F60100000000000102 /* CreatorProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000202 /* CreatorProfile.swift */; };
+		C3D4E5F60100000000000103 /* FirebaseCreatorProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000203 /* FirebaseCreatorProfileService.swift */; };
+		C3D4E5F60100000000000104 /* CreatorOnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */; };
+		C3D4E5F60100000000000105 /* CreatorOnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */; };
+		C3D4E5F60100000000000106 /* CreatorOnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +41,12 @@
 		B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModelTests.swift; sourceTree = "<group>"; };
 		B2C3D4E5F601000000000203 /* AixcamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AixcamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C3D4E5F60100000000000201 /* CreatorSetupStep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorSetupStep.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000202 /* CreatorProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorProfile.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000203 /* FirebaseCreatorProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseCreatorProfileService.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViewModel.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingView.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorOnboardingViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +82,11 @@
 				A1B2C3D4E5F6010000000201 /* AixcamApp.swift */,
 				A1B2C3D4E5F6010000000202 /* ContentView.swift */,
 				A1B2C3D4E5F6010000000203 /* AuthViewModel.swift */,
+				C3D4E5F60100000000000201 /* CreatorSetupStep.swift */,
+				C3D4E5F60100000000000202 /* CreatorProfile.swift */,
+				C3D4E5F60100000000000203 /* FirebaseCreatorProfileService.swift */,
+				C3D4E5F60100000000000204 /* CreatorOnboardingViewModel.swift */,
+				C3D4E5F60100000000000205 /* CreatorOnboardingView.swift */,
 				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
@@ -81,6 +98,7 @@
 			isa = PBXGroup;
 			children = (
 				B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */,
+				C3D4E5F60100000000000206 /* CreatorOnboardingViewModelTests.swift */,
 			);
 			path = AixcamTests;
 			sourceTree = "<group>";
@@ -205,6 +223,11 @@
 				A1B2C3D4E5F6010000000101 /* AixcamApp.swift in Sources */,
 				A1B2C3D4E5F6010000000102 /* ContentView.swift in Sources */,
 				A1B2C3D4E5F6010000000103 /* AuthViewModel.swift in Sources */,
+				C3D4E5F60100000000000101 /* CreatorSetupStep.swift in Sources */,
+				C3D4E5F60100000000000102 /* CreatorProfile.swift in Sources */,
+				C3D4E5F60100000000000103 /* FirebaseCreatorProfileService.swift in Sources */,
+				C3D4E5F60100000000000104 /* CreatorOnboardingViewModel.swift in Sources */,
+				C3D4E5F60100000000000105 /* CreatorOnboardingView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -213,6 +236,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B2C3D4E5F601000000000102 /* AuthViewModelTests.swift in Sources */,
+				C3D4E5F60100000000000106 /* CreatorOnboardingViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

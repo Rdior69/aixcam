@@ -22,6 +22,8 @@ struct ContentView: View {
 
                         if route == .privacy {
                             PrivacyDetailsView(route: $route)
+                        } else if let currentMember = authViewModel.currentMember, currentMember.accountType == .creator {
+                            CreatorOnboardingView(member: currentMember)
                         } else if let currentMember = authViewModel.currentMember {
                             DashboardView(member: currentMember, route: $route)
                         } else {
