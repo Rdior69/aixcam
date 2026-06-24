@@ -1,4 +1,6 @@
+import PhotosUI
 import SwiftUI
+import UIKit
 
 struct CreatorOnboardingView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
@@ -12,7 +14,11 @@ struct CreatorOnboardingView: View {
         VStack(alignment: .leading, spacing: 20) {
             onboardingHeader
             stepSelector
-            CreatorOnboardingStepPlaceholder(step: viewModel.selectedStep)
+            if viewModel.selectedStep == .profileInfo {
+                CreatorProfileInfoStepView(viewModel: viewModel)
+            } else {
+                CreatorOnboardingStepPlaceholder(step: viewModel.selectedStep)
+            }
             actionBar
         }
         .padding(24)
@@ -90,30 +96,49 @@ struct CreatorOnboardingView: View {
 
     private var actionBar: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                Button("Back") {
-                    viewModel.moveToPreviousStep()
-                }
-                .buttonStyle(.bordered)
-                .disabled(viewModel.isFirstStep)
-
-                Button(viewModel.isLastStep ? "Review" : "Next") {
-                    viewModel.moveToNextStep()
-                }
-                .buttonStyle(.bordered)
-                .disabled(viewModel.isLastStep)
-
+            if viewModel.selectedStep == .profileInfo {
                 Button {
                     Task {
-                        await viewModel.markSelectedStepComplete()
+                        await viewModel.saveProfileInformationAndContinue()
                     }
                 } label: {
-                    Label("Mark placeholder ready", systemImage: "checkmark")
-                        .frame(maxWidth: .infinity)
+                    if viewModel.isSaving {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Label("Continue to Photos", systemImage: "arrow.right")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.teal)
                 .disabled(viewModel.isSaving)
+            } else {
+                HStack(spacing: 12) {
+                    Button("Back") {
+                        viewModel.moveToPreviousStep()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isFirstStep)
+
+                    Button(viewModel.isLastStep ? "Review" : "Next") {
+                        viewModel.moveToNextStep()
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(viewModel.isLastStep)
+
+                    Button {
+                        Task {
+                            await viewModel.markSelectedStepComplete()
+                        }
+                    } label: {
+                        Label("Mark placeholder ready", systemImage: "checkmark")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.teal)
+                    .disabled(viewModel.isSaving)
+                }
             }
 
             Button {
@@ -133,6 +158,190 @@ struct CreatorOnboardingView: View {
 
         return .white.opacity(0.08)
     }
+}
+
+private struct CreatorProfileInfoStepView: View {
+    @ObservedObject var viewModel: CreatorOnboardingViewModel
+    @State private var profilePhotoItem: PhotosPickerItem?
+    @State private var coverImageItem: PhotosPickerItem?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Label("Profile Info", systemImage: CreatorSetupStep.profileInfo.systemImage)
+                .font(.title2.weight(.bold))
+
+            Form {
+                Section("Images") {
+                    CreatorImagePickerRow(
+                        title: "Profile photo",
+                        selectedData: viewModel.profileInfoForm.profilePhotoData,
+                        existingURL: viewModel.profile.profilePhotoURL,
+                        item: $profilePhotoItem
+                    )
+
+                    CreatorImagePickerRow(
+                        title: "Cover/banner image",
+                        selectedData: viewModel.profileInfoForm.coverImageData,
+                        existingURL: viewModel.profile.coverImageURL,
+                        item: $coverImageItem
+                    )
+                }
+
+                Section("Identity") {
+                    TextField("Display name", text: $viewModel.profileInfoForm.displayName)
+                        .textContentType(.name)
+                    TextField("Username", text: $viewModel.profileInfoForm.username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                    TextField("Location", text: $viewModel.profileInfoForm.location)
+                }
+
+                Section("About") {
+                    TextEditor(text: $viewModel.profileInfoForm.aboutMe)
+                        .frame(minHeight: 110)
+                        .overlay(alignment: .topLeading) {
+                            if viewModel.profileInfoForm.aboutMe.isEmpty {
+                                Text("About Me description")
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 4)
+                            }
+                        }
+                }
+
+                Section("Links") {
+                    TextField("Website link", text: $viewModel.profileInfoForm.websiteURL)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                    TextField("Instagram link", text: $viewModel.profileInfoForm.instagramURL)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                    TextField("TikTok link", text: $viewModel.profileInfoForm.tiktokURL)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                    TextField("X/Twitter link", text: $viewModel.profileInfoForm.xTwitterURL)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                }
+
+                if viewModel.validationErrors.isEmpty == false {
+                    Section("Required before continuing") {
+                        ForEach(viewModel.validationErrors, id: \.self) { error in
+                            Label(error, systemImage: "exclamationmark.triangle.fill")
+                                .foregroundStyle(.red)
+                        }
+                    }
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .frame(minHeight: 640)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+
+            if let errorMessage = viewModel.errorMessage {
+                Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .accessibilityLabel("Profile info error. \(errorMessage)")
+            }
+        }
+        .onChange(of: profilePhotoItem) { _, newItem in
+            Task {
+                await loadImageData(from: newItem, imageType: .profilePhoto)
+            }
+        }
+        .onChange(of: coverImageItem) { _, newItem in
+            Task {
+                await loadImageData(from: newItem, imageType: .coverImage)
+            }
+        }
+    }
+
+    private func loadImageData(from item: PhotosPickerItem?, imageType: CreatorProfileImageType) async {
+        guard let item else {
+            return
+        }
+
+        do {
+            guard let data = try await item.loadTransferable(type: Data.self) else {
+                viewModel.setProfileInfoError("We could not read the selected image.")
+                return
+            }
+
+            switch imageType {
+            case .profilePhoto:
+                viewModel.setProfilePhoto(data: data)
+            case .coverImage:
+                viewModel.setCoverImage(data: data)
+            }
+        } catch {
+            viewModel.setProfileInfoError("We could not load the selected image.")
+        }
+    }
+}
+
+private struct CreatorImagePickerRow: View {
+    let title: String
+    let selectedData: Data?
+    let existingURL: String?
+    @Binding var item: PhotosPickerItem?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.headline)
+
+            HStack(spacing: 14) {
+                imagePreview
+
+                PhotosPicker(selection: $item, matching: .images) {
+                    Label("Choose image", systemImage: "photo")
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    @ViewBuilder
+    private var imagePreview: some View {
+        if let selectedData, let image = UIImage(data: selectedData) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 96, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        } else if let existingURL, let url = URL(string: existingURL) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                default:
+                    placeholder
+                }
+            }
+            .frame(width: 96, height: 72)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        } else {
+            placeholder
+        }
+    }
+
+    private var placeholder: some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(.white.opacity(0.12))
+            .frame(width: 96, height: 72)
+            .overlay {
+                Image(systemName: "photo")
+                    .foregroundStyle(.secondary)
+            }
+    }
+}
+
+private enum CreatorProfileImageType {
+    case profilePhoto
+    case coverImage
 }
 
 private struct CreatorOnboardingStepPlaceholder: View {
