@@ -1,0 +1,64 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved
+
+# CocoaPods / Carthage
+Pods/
+Carthage/Build/
+
+# Firebase / secrets — never commit real credentials
+GoogleService-Info.plist
+GoogleService-Info*.plist
+!.GoogleService-Info.plist.example
+*.pem
+*.p12
+*.mobileprovision
+.env
+.env.*
+!.env.example
+
+# Firebase local emulators / caches
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+database-debug.log
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# IDEs / editors
+.idea/
+.vscode/
+*.swp
+*~
+
+# Node (Cloud Functions)
+functions/node_modules/
+functions/lib/
+npm-debug.log*
+yarn-error.log*
+
+# Archives / misc
+*.zip
+*.tar.gz

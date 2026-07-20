@@ -576,6 +576,10 @@ private struct DashboardMetricsStepView: View {
             Text("Step 6 - Creator Dashboard")
                 .font(.headline)
 
+            Text(draft.dashboard.isDemoData ? "Sample preview metrics — not live analytics." : "Live analytics preview.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 MetricCard(title: "Revenue", value: draft.dashboard.monthlyRevenue.formatted(.currency(code: "USD")))
                 MetricCard(title: "Subscribers", value: "\(draft.dashboard.subscriberCount)")
@@ -633,7 +637,7 @@ private struct PublishStepView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Preview public fan page")
                             .font(.subheadline.weight(.semibold))
-                        Text("https://aixlive.app/creator/\(draft.branding.customProfilePath)")
+                        Text("https://aixcam.app/creator/\(draft.branding.customProfilePath)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

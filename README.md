@@ -1,25 +1,52 @@
-# aixcam
-Aixcam is a next-generation creator platform that combines livestreaming, fan engagement, subscriptions, virtual gifting, AI-powered experiences, and premium monetization tools to help creators build thriving digital businesses
+# Aixcam
+
+Aixcam is a creator platform prototype that combines livestreaming, fan engagement, subscriptions, AI-assisted workflows, and monetization tools.
+
+## Current status
+
+This repository contains an **iOS SwiftUI prototype**. Today the app runs with a **local backend** (Keychain-backed accounts + on-device drafts). Firebase-shaped service code is present and will activate only after you add the Firebase iOS SDK and a `GoogleService-Info.plist` (never commit the real plist).
+
+What works now:
+
+- Sign up / login (local prototype auth)
+- Creator vs fan/brand routing
+- Full 7-step creator onboarding wizard with local persistence
+- Publish flow that generates an `https://aixcam.app/creator/{slug}` preview URL
+
+What is not wired yet:
+
+- Live Firebase Auth / Firestore / Storage
+- Real AI caption generation (local string template only)
+- Livestream / camera / gifting product surfaces
 
 ## iOS app
 
-This repository includes an Xcode SwiftUI project for the AIXLive iOS app.
+- Open `Aixcam.xcodeproj` in Xcode 15.3+ (iOS 17+).
+- Shared scheme: **Aixcam** (includes unit tests).
+- Key sources live under `Aixcam/`.
+- Unit tests live under `AixcamTests/`.
 
-- `Aixcam.xcodeproj` opens the app in Xcode.
-- `Aixcam/ContentView.swift` handles auth routing, post-login onboarding entry, and dashboard root states.
-- `Aixcam/AuthViewModel.swift` manages session state and authentication.
-- `Aixcam/CreatorModels.swift` defines onboarding models for profile, branding, media, subscriptions, AI studio, and analytics.
-- `Aixcam/CreatorBackendService.swift` provides Firebase-ready and local fallback data services.
-- `Aixcam/CreatorSetupViewModel.swift` handles onboarding wizard state and real-time persistence.
-- `Aixcam/CreatorOnboardingViews.swift` includes the full 7-step creator setup wizard and dashboard views.
-- `firestore.rules`, `storage.rules`, and `firestore.indexes.json` define backend security and query indexes.
-- `FIREBASE_SCHEMA.md` documents database and storage structure.
-- `Aixcam/Assets.xcassets` contains the app icon and in-app icon image.
+| File | Role |
+|------|------|
+| `Aixcam/ContentView.swift` | Auth routing and post-login roots |
+| `Aixcam/AuthViewModel.swift` | Session state; revalidates on launch |
+| `Aixcam/CreatorModels.swift` | Onboarding models |
+| `Aixcam/CreatorBackendService.swift` | Local + Firebase-ready backend |
+| `Aixcam/SecureCredentialStore.swift` | Keychain storage for local credentials |
+| `Aixcam/CreatorSetupViewModel.swift` | Wizard state + persistence |
+| `Aixcam/CreatorOnboardingViews.swift` | 7-step setup UI |
 
-Open `Aixcam.xcodeproj` in Xcode, choose an iPhone simulator, then build and run.
+## Backend docs
 
-## App icon sizing
+- `FIREBASE_SCHEMA.md` — intended Firestore/Storage shape
+- `firestore.rules`, `storage.rules`, `firestore.indexes.json`
+- `firebase.json` + `functions/` — deployable Cloud Function stub
+- `.GoogleService-Info.plist.example` — template only; copy to `GoogleService-Info.plist` locally
 
-The reusable `AixcamIconView` uses SwiftUI's `resizable()` and `scaledToFit()`
-modifiers with an explicit square frame so the icon image resizes without being
-stretched or cropped.
+## Git hygiene
+
+`.gitignore` excludes DerivedData, `xcuserdata`, Node modules, and Firebase secrets such as `GoogleService-Info.plist`.
+
+## App icon
+
+`AixcamIconView` uses `resizable()` + `scaledToFit()` with an explicit square frame so the icon scales without stretch or crop.

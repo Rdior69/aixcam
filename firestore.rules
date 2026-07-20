@@ -9,9 +9,23 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function validAccountType() {
+      return request.resource.data.accountType in ["Creator", "Fan or member", "Brand partner"];
+    }
+
     match /users/{uid} {
-      allow create: if isOwner(uid);
-      allow read, update: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasAll(["id", "name", "email", "accountType", "createdAt", "hasPublishedCreatorProfile"])
+        && request.resource.data.id == uid
+        && request.resource.data.email is string
+        && request.resource.data.name is string
+        && validAccountType()
+        && request.resource.data.hasPublishedCreatorProfile == false;
+      allow read: if isOwner(uid);
+      allow update: if isOwner(uid)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.email == resource.data.email
+        && validAccountType();
       allow delete: if false;
     }
 

@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import Security
 
 struct SignUpPayload {
     var fullName: String
@@ -37,6 +38,8 @@ enum CreatorBackendError: LocalizedError {
 protocol CreatorBackendServicing {
     func signUp(payload: SignUpPayload) async throws -> AppUser
     func login(email: String, password: String) async throws -> AppUser
+    func refreshUser(userID: String) async throws -> AppUser
+    func signOut() async throws
     func loadCreatorDraft(userID: String) async throws -> CreatorOnboardingDraft?
     func saveCreatorDraft(userID: String, draft: CreatorOnboardingDraft) async throws
     func observeCreatorDraft(userID: String) -> AsyncStream<CreatorOnboardingDraft>
@@ -56,17 +59,36 @@ enum CreatorBackendFactory {
     }
 }
 
+enum CreatorProfileURL {
+    static let publicBase = "https://aixcam.app/creator"
+
+    static func make(slug: String) -> String {
+        "\(publicBase)/\(slug)"
+    }
+
+    static func sanitizeSlug(_ value: String) -> String {
+        value
+            .lowercased()
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "_", with: "-")
+            .filter { $0.isLetter || $0.isNumber || $0 == "-" }
+    }
+}
+
 @MainActor
 final class LocalCreatorBackendService: CreatorBackendServicing {
     static let shared = LocalCreatorBackendService()
 
     private struct MemberRecord: Codable {
         var user: AppUser
+        var passwordSalt: String
         var passwordHash: String
     }
 
-    private let membersStorageKey = "aixcam.members.v2"
+    private let membersStorageKey = "aixcam.members.v3"
     private let draftStorageKey = "aixcam.creatorDrafts.v2"
+    private let credentialStore: SecureCredentialStoring
+    private let userDefaults: UserDefaults
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
@@ -74,7 +96,12 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
     private var draftsByUserID: [String: CreatorOnboardingDraft]
     private var draftContinuations: [String: [UUID: AsyncStream<CreatorOnboardingDraft>.Continuation]]
 
-    private init() {
+    init(
+        credentialStore: SecureCredentialStoring = KeychainCredentialStore(),
+        userDefaults: UserDefaults = .standard
+    ) {
+        self.credentialStore = credentialStore
+        self.userDefaults = userDefaults
         encoder = JSONEncoder()
         decoder = JSONDecoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -93,7 +120,7 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
             throw CreatorBackendError.invalidInput("Enter your full name to continue.")
         }
 
-        guard cleanedEmail.contains("@"), cleanedEmail.contains(".") else {
+        guard isValidEmail(cleanedEmail) else {
             throw CreatorBackendError.invalidInput("Enter a valid email address.")
         }
 
@@ -105,6 +132,7 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
             throw CreatorBackendError.duplicateEmail
         }
 
+        let salt = Self.makeSalt()
         let newUser = AppUser(
             id: UUID().uuidString,
             name: cleanedName,
@@ -113,9 +141,13 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
             createdAt: Date(),
             hasPublishedCreatorProfile: false
         )
-        let memberRecord = MemberRecord(user: newUser, passwordHash: hashPassword(payload.password))
+        let memberRecord = MemberRecord(
+            user: newUser,
+            passwordSalt: salt.base64EncodedString(),
+            passwordHash: Self.hash(password: payload.password, salt: salt)
+        )
         membersByEmail[cleanedEmail] = memberRecord
-        persistMembers()
+        try persistMembers()
         if payload.accountType == .creator {
             draftsByUserID[newUser.id] = CreatorOnboardingDraft(user: newUser)
             persistDrafts()
@@ -128,10 +160,21 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
         guard let record = membersByEmail[cleanedEmail] else {
             throw CreatorBackendError.invalidCredentials
         }
-        guard record.passwordHash == hashPassword(password) else {
+        guard Self.verify(password: password, record: record) else {
             throw CreatorBackendError.invalidCredentials
         }
         return record.user
+    }
+
+    func refreshUser(userID: String) async throws -> AppUser {
+        guard let record = memberRecord(for: userID) else {
+            throw CreatorBackendError.missingUser
+        }
+        return record.user
+    }
+
+    func signOut() async throws {
+        // Local prototype sessions are owned by AuthViewModel.
     }
 
     func loadCreatorDraft(userID: String) async throws -> CreatorOnboardingDraft? {
@@ -178,13 +221,13 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
         guard slugSource.isEmpty == false else {
             throw CreatorBackendError.invalidInput("Set a username or custom profile URL before publishing.")
         }
-        let slug = slugSource.lowercased()
-            .replacingOccurrences(of: " ", with: "-")
-            .replacingOccurrences(of: "_", with: "-")
-            .filter { $0.isLetter || $0.isNumber || $0 == "-" }
+        let slug = CreatorProfileURL.sanitizeSlug(slugSource)
+        guard slug.isEmpty == false else {
+            throw CreatorBackendError.invalidInput("Set a username or custom profile URL before publishing.")
+        }
 
         let published = PublishedCreatorProfile(
-            publicURL: "https://aixlive.app/creator/\(slug)",
+            publicURL: CreatorProfileURL.make(slug: slug),
             publishedAt: Date()
         )
 
@@ -196,14 +239,14 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
 
         member.hasPublishedCreatorProfile = true
         updateMember(member)
-        persistMembers()
+        try persistMembers()
         persistDrafts()
         return published
     }
 
     func uploadAsset(userID: String, data: Data, mediaType: CreatorMediaType) async throws -> String {
         let folderURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("aixlive-assets", isDirectory: true)
+            .appendingPathComponent("aixcam-assets", isDirectory: true)
             .appendingPathComponent(userID, isDirectory: true)
         try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true, attributes: nil)
         let fileURL = folderURL.appendingPathComponent(UUID().uuidString + (mediaType == .photo ? ".jpg" : ".mov"))
@@ -224,9 +267,12 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
         return "New drop alert: \(base) - tap in for behind-the-scenes access and premium creator updates."
     }
 
-    private func hashPassword(_ password: String) -> String {
-        let digest = SHA256.hash(data: Data(password.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
+    private func isValidEmail(_ email: String) -> Bool {
+        let emailPattern = #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#
+        guard let range = email.range(of: emailPattern, options: [.regularExpression, .caseInsensitive]) else {
+            return false
+        }
+        return range == email.startIndex..<email.endIndex
     }
 
     private func normalizeEmail(_ value: String) -> String {
@@ -251,27 +297,56 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
     }
 
     private func loadPersistedState() {
-        if let memberData = UserDefaults.standard.data(forKey: membersStorageKey),
+        if let memberData = credentialStore.loadData(for: membersStorageKey),
            let decoded = try? decoder.decode([String: MemberRecord].self, from: memberData) {
             membersByEmail = decoded
         }
 
-        if let draftData = UserDefaults.standard.data(forKey: draftStorageKey),
+        if let draftData = userDefaults.data(forKey: draftStorageKey),
            let decoded = try? decoder.decode([String: CreatorOnboardingDraft].self, from: draftData) {
             draftsByUserID = decoded
         }
     }
 
-    private func persistMembers() {
-        if let data = try? encoder.encode(membersByEmail) {
-            UserDefaults.standard.set(data, forKey: membersStorageKey)
+    private func persistMembers() throws {
+        if membersByEmail.isEmpty {
+            try credentialStore.deleteData(for: membersStorageKey)
+            return
         }
+        let data = try encoder.encode(membersByEmail)
+        try credentialStore.saveData(data, for: membersStorageKey)
     }
 
     private func persistDrafts() {
         if let data = try? encoder.encode(draftsByUserID) {
-            UserDefaults.standard.set(data, forKey: draftStorageKey)
+            userDefaults.set(data, forKey: draftStorageKey)
         }
+    }
+
+    private static func makeSalt() -> Data {
+        var bytes = [UInt8](repeating: 0, count: 16)
+        let status = bytes.withUnsafeMutableBytes {
+            SecRandomCopyBytes(kSecRandomDefault, bytes.count, $0.baseAddress!)
+        }
+        if status != errSecSuccess {
+            bytes = Array(UUID().uuidString.utf8)
+        }
+        return Data(bytes)
+    }
+
+    private static func hash(password: String, salt: Data) -> String {
+        var input = Data()
+        input.append(salt)
+        input.append(Data(password.utf8))
+        let digest = SHA256.hash(data: input)
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func verify(password: String, record: MemberRecord) -> Bool {
+        guard let salt = Data(base64Encoded: record.passwordSalt) else {
+            return false
+        }
+        return hash(password: password, salt: salt) == record.passwordHash
     }
 }
 
@@ -304,11 +379,24 @@ final class FirebaseCreatorBackendService: CreatorBackendServicing {
     }
 
     func signUp(payload: SignUpPayload) async throws -> AppUser {
-        let result = try await auth.createUser(withEmail: payload.email, password: payload.password)
+        let cleanedName = payload.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanedEmail = payload.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        guard cleanedName.isEmpty == false else {
+            throw CreatorBackendError.invalidInput("Enter your full name to continue.")
+        }
+        guard cleanedEmail.contains("@"), cleanedEmail.contains(".") else {
+            throw CreatorBackendError.invalidInput("Enter a valid email address.")
+        }
+        guard payload.password.count >= 8 else {
+            throw CreatorBackendError.invalidInput("Use a password with at least 8 characters.")
+        }
+
+        let result = try await auth.createUser(withEmail: cleanedEmail, password: payload.password)
         let user = AppUser(
             id: result.user.uid,
-            name: payload.fullName,
-            email: payload.email.lowercased(),
+            name: cleanedName,
+            email: cleanedEmail,
             accountType: payload.accountType,
             createdAt: Date(),
             hasPublishedCreatorProfile: false
@@ -328,6 +416,18 @@ final class FirebaseCreatorBackendService: CreatorBackendServicing {
             throw CreatorBackendError.missingUser
         }
         return try decodeObject(AppUser.self, from: data)
+    }
+
+    func refreshUser(userID: String) async throws -> AppUser {
+        let snapshot = try await firestore.collection("users").document(userID).getDocument()
+        guard let data = snapshot.data() else {
+            throw CreatorBackendError.missingUser
+        }
+        return try decodeObject(AppUser.self, from: data)
+    }
+
+    func signOut() async throws {
+        try auth.signOut()
     }
 
     func loadCreatorDraft(userID: String) async throws -> CreatorOnboardingDraft? {
@@ -362,11 +462,12 @@ final class FirebaseCreatorBackendService: CreatorBackendServicing {
         guard slugSource.isEmpty == false else {
             throw CreatorBackendError.invalidInput("Set a custom profile URL before publishing.")
         }
-        let slug = slugSource.lowercased()
-            .replacingOccurrences(of: " ", with: "-")
-            .filter { $0.isLetter || $0.isNumber || $0 == "-" }
+        let slug = CreatorProfileURL.sanitizeSlug(slugSource)
+        guard slug.isEmpty == false else {
+            throw CreatorBackendError.invalidInput("Set a custom profile URL before publishing.")
+        }
         let published = PublishedCreatorProfile(
-            publicURL: "https://aixlive.app/creator/\(slug)",
+            publicURL: CreatorProfileURL.make(slug: slug),
             publishedAt: Date()
         )
 
