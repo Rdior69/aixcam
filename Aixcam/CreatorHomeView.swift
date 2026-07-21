@@ -71,8 +71,13 @@ struct CreatorHomeView: View {
                 .frame(width: 36, height: 36)
                 .accessibilityHidden(true)
 
-            Text("Aixcam")
-                .font(.title3.weight(.heavy))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Aixcam")
+                    .font(.title3.weight(.heavy))
+                Text("Creator Home")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer()
 

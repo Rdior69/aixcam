@@ -43,18 +43,12 @@ struct ContentView: View {
             .onChange(of: route) {
                 authViewModel.resetStatus()
             }
-            .onChange(of: authViewModel.currentUser?.id) { _, newID in
+            .onChange(of: authViewModel.currentUser?.id) { _, _ in
                 showCreatorSetup = false
                 configureCreatorSetupViewModel(forceReload: true)
-                if newID != nil, authViewModel.shouldShowCreatorOnboarding {
-                    showCreatorSetup = true
-                }
             }
             .task {
                 configureCreatorSetupViewModel()
-                if authViewModel.shouldShowCreatorOnboarding {
-                    showCreatorSetup = true
-                }
             }
         }
     }
