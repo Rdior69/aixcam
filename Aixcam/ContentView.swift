@@ -1,113 +1,113 @@
 import SwiftUI
 
-enum AuthRoute: Equatable {
-    case home
-    case signup
-    case login
+struct ContentView: View {
+    var body: some View {
+        UnauthenticatedRootView()
+    }
 }
 
-struct ContentView: View {
+struct UnauthenticatedRootView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @State private var route: AuthRoute = .home
-    @State private var creatorSetupViewModel: CreatorSetupViewModel?
-    @State private var showCreatorSetup = false
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                BackgroundGradient()
-                if let user = authViewModel.currentUser {
-                    authenticatedRoot(user: user)
-                } else {
-                    ScrollView {
-                        VStack(spacing: 28) {
-                            HeaderView(route: $route)
+            ScrollView {
+                VStack(spacing: 28) {
+                    HeaderView(route: $route)
 
-                            switch route {
-                            case .home:
-                                LandingView(route: $route)
-                            case .signup:
-                                SignUpView(route: $route)
-                            case .login:
-                                LoginView(route: $route)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 24)
-                        .frame(maxWidth: 720)
-                        .frame(maxWidth: .infinity)
+                    switch route {
+                    case .home:
+                        LandingView(route: $route)
+                    case .signup:
+                        SignUpView(route: $route)
+                    case .login:
+                        LoginView(route: $route)
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
+                .frame(maxWidth: 720)
+                .frame(maxWidth: .infinity)
             }
             .navigationBarHidden(true)
             .onChange(of: route) {
                 authViewModel.resetStatus()
             }
-            .onChange(of: authViewModel.currentUser?.id) { _, _ in
-                showCreatorSetup = false
-                configureCreatorSetupViewModel(forceReload: true)
-            }
-            .task {
-                configureCreatorSetupViewModel()
-            }
         }
     }
+}
 
-    @ViewBuilder
-    private func authenticatedRoot(user: AppUser) -> some View {
-        if user.accountType == .creator {
-            CreatorHomeView(
-                user: user,
-                needsSetup: authViewModel.shouldShowCreatorOnboarding,
-                onEditSetup: {
-                    configureCreatorSetupViewModel(forceReload: true)
-                    showCreatorSetup = true
-                },
-                onSignOut: {
-                    showCreatorSetup = false
-                    authViewModel.signOut()
-                    route = .home
-                }
-            )
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity)
-            .fullScreenCover(isPresented: $showCreatorSetup) {
-                NavigationStack {
-                    if let creatorSetupViewModel {
-                        CreatorSetupWizardView(
-                            viewModel: creatorSetupViewModel,
-                            onPublished: {
-                                authViewModel.markCreatorOnboardingPublished()
-                                showCreatorSetup = false
-                            },
-                            onOpenCreatorHome: {
-                                showCreatorSetup = false
-                            },
-                            onSignOut: {
-                                showCreatorSetup = false
-                                authViewModel.signOut()
-                                route = .home
-                            }
-                        )
-                    } else {
+struct CreatorAuthenticatedRoot: View {
+    @EnvironmentObject private var authViewModel: AuthViewModel
+    let user: AppUser
+    let needsSetup: Bool
+
+    @State private var creatorSetupViewModel: CreatorSetupViewModel?
+    @State private var showCreatorSetup = false
+    @State private var authRoute: AuthRoute = .home
+
+    var body: some View {
+        CreatorHomeView(
+            user: user,
+            needsSetup: needsSetup,
+            onEditSetup: {
+                configureCreatorSetupViewModel(forceReload: true)
+                showCreatorSetup = true
+            },
+            onSignOut: {
+                showCreatorSetup = false
+                authViewModel.signOut()
+                authRoute = .home
+            }
+        )
+        .frame(maxWidth: 760)
+        .frame(maxWidth: .infinity)
+        .fullScreenCover(isPresented: $showCreatorSetup) {
+            NavigationStack {
+                if let creatorSetupViewModel {
+                    CreatorSetupWizardView(
+                        viewModel: creatorSetupViewModel,
+                        onPublished: {
+                            authViewModel.markCreatorOnboardingPublished()
+                            showCreatorSetup = false
+                        },
+                        onOpenCreatorHome: {
+                            showCreatorSetup = false
+                        },
+                        onSignOut: {
+                            showCreatorSetup = false
+                            authViewModel.signOut()
+                            authRoute = .home
+                        }
+                    )
+                } else {
+                    VStack(spacing: 16) {
                         ProgressView("Loading setup…")
-                            .task {
-                                configureCreatorSetupViewModel(forceReload: true)
-                            }
+                        Button("Back to Creator Home") {
+                            showCreatorSetup = false
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.teal)
+                    }
+                    .task {
+                        configureCreatorSetupViewModel(forceReload: true)
                     }
                 }
             }
-        } else {
-            NonCreatorAccountView(user: user) {
-                authViewModel.signOut()
-                route = .home
-            }
-            .frame(maxWidth: 760)
+            .interactiveDismissDisabled(false)
+        }
+        .onChange(of: user.id) { _, _ in
+            showCreatorSetup = false
+            configureCreatorSetupViewModel(forceReload: true)
+        }
+        .task {
+            configureCreatorSetupViewModel()
         }
     }
 
     private func configureCreatorSetupViewModel(forceReload: Bool = false) {
-        guard let user = authViewModel.currentUser, user.accountType == .creator else {
+        guard user.accountType == .creator else {
             creatorSetupViewModel = nil
             return
         }
@@ -115,6 +115,12 @@ struct ContentView: View {
             creatorSetupViewModel = CreatorSetupViewModel(user: user)
         }
     }
+}
+
+enum AuthRoute: Equatable {
+    case home
+    case signup
+    case login
 }
 
 private struct HeaderView: View {
@@ -448,64 +454,10 @@ private struct PillText: View {
     }
 }
 
-private struct BackgroundGradient: View {
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        LinearGradient(
-            colors: colorScheme == .dark
-                ? [
-                    Color(red: 0.03, green: 0.04, blue: 0.08),
-                    Color(red: 0.05, green: 0.09, blue: 0.18),
-                    Color(red: 0.12, green: 0.09, blue: 0.22)
-                ]
-                : [
-                    Color(red: 0.93, green: 0.96, blue: 1.0),
-                    Color(red: 0.89, green: 0.94, blue: 0.99),
-                    Color(red: 0.95, green: 0.9, blue: 0.98)
-                ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .overlay(alignment: .topLeading) {
-            Circle()
-                .fill(.teal.opacity(0.28))
-                .frame(width: 280, height: 280)
-                .blur(radius: 80)
-                .offset(x: -110, y: -100)
-        }
-        .overlay(alignment: .topTrailing) {
-            Circle()
-                .fill(.purple.opacity(0.28))
-                .frame(width: 300, height: 300)
-                .blur(radius: 90)
-                .offset(x: 130, y: 20)
-        }
-        .ignoresSafeArea()
-    }
-}
-
-private struct NonCreatorAccountView: View {
-    let user: AppUser
-    let onSignOut: () -> Void
-
-    var body: some View {
-        VStack(spacing: 14) {
-            Text("Welcome, \(user.name)")
-                .font(.title2.weight(.bold))
-            Text("This account is set as \(user.accountType.rawValue). Creator setup wizard opens automatically for creator accounts.")
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button("Sign out", action: onSignOut)
-                .buttonStyle(.bordered)
-        }
-        .padding(24)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .padding(20)
-    }
-}
-
 #Preview {
-    ContentView()
-        .environmentObject(AuthViewModel())
+    let auth = AuthViewModel(restoreSessionOnInit: false)
+    let session = SessionManager(authViewModel: auth)
+    return RootView()
+        .environmentObject(session)
+        .environmentObject(auth)
 }

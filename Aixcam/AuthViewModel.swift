@@ -98,27 +98,32 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    /// Restores a cached session then revalidates against the backend.
+    func revalidateSession() async {
+        guard let data = userDefaults.data(forKey: sessionStorageKey),
+              let record = try? decoder.decode(SessionRecord.self, from: data) else {
+            currentUser = nil
+            return
+        }
+
+        currentUser = record.user
+        do {
+            let refreshed = try await backendService.refreshUser(userID: record.user.id)
+            applyAuthenticatedState(for: refreshed)
+        } catch {
+            currentUser = nil
+            userDefaults.removeObject(forKey: sessionStorageKey)
+        }
+    }
+
     private func applyAuthenticatedState(for user: AppUser) {
         currentUser = user
         persistSession()
     }
 
     private func restoreSession() {
-        guard let data = userDefaults.data(forKey: sessionStorageKey),
-              let record = try? decoder.decode(SessionRecord.self, from: data) else {
-            return
-        }
-
-        // Show cached user immediately, then revalidate against the backend.
-        currentUser = record.user
         Task {
-            do {
-                let refreshed = try await backendService.refreshUser(userID: record.user.id)
-                applyAuthenticatedState(for: refreshed)
-            } catch {
-                currentUser = nil
-                userDefaults.removeObject(forKey: sessionStorageKey)
-            }
+            await revalidateSession()
         }
     }
 

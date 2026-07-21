@@ -6,7 +6,7 @@ import FirebaseCore
 
 @main
 struct AixcamApp: App {
-    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var sessionManager: SessionManager
 
     init() {
         #if canImport(FirebaseCore)
@@ -14,12 +14,15 @@ struct AixcamApp: App {
             FirebaseApp.configure()
         }
         #endif
+        let authViewModel = AuthViewModel(restoreSessionOnInit: false)
+        _sessionManager = StateObject(wrappedValue: SessionManager(authViewModel: authViewModel))
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(authViewModel)
+            RootView()
+                .environmentObject(sessionManager)
+                .environmentObject(sessionManager.authViewModel)
         }
     }
 }

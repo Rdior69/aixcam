@@ -8,12 +8,14 @@ This repository contains an **iOS SwiftUI prototype**. Today the app runs with a
 
 What works now:
 
+- Launch screen + centralized session routing (`SessionManager`)
 - Sign up / login (local prototype auth)
-- Creator vs fan/brand routing
+- Creator vs subscriber-role routing (fan/brand map to subscriber shell)
 - Full 7-step creator onboarding wizard with local persistence
 - Creator Home after setup, with growth snapshot and studio summary
 - Live camera studio (preview, go live / end, mute, flip) from Creator Home
 - Publish flow that generates an `https://aixcam.app/creator/{slug}` preview URL
+- Suspended/restricted account status screen
 
 What is not wired yet:
 
@@ -30,13 +32,16 @@ What is not wired yet:
 
 | File | Role |
 |------|------|
-| `Aixcam/ContentView.swift` | Auth routing and post-login roots |
+| `Aixcam/RootView.swift` | App root switch driven by `SessionManager` |
+| `Aixcam/SessionManager.swift` / `SessionRouter.swift` | Launch bootstrap + pure route mapping |
+| `Aixcam/ContentView.swift` | Welcome/auth + creator authenticated root |
 | `Aixcam/AuthViewModel.swift` | Session state; revalidates on launch |
 | `Aixcam/CreatorModels.swift` | Onboarding models |
 | `Aixcam/CreatorBackendService.swift` | Local + Firebase-ready backend |
 | `Aixcam/SecureCredentialStore.swift` | Keychain storage for local credentials |
 | `Aixcam/CreatorSetupViewModel.swift` | Wizard state + persistence |
 | `Aixcam/CreatorOnboardingViews.swift` | 7-step setup UI |
+| `Docs/ARCHITECTURE.md` | Phase plan + routing table |
 
 ## Backend docs
 
