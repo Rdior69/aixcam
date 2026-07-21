@@ -684,35 +684,6 @@ private struct PublishStepView: View {
     }
 }
 
-struct CreatorDashboardHomeView: View {
-    let user: AppUser
-    let onSignOut: () -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Creator Dashboard")
-                    .font(.largeTitle.bold())
-                Text("Welcome, \(user.name)")
-                    .foregroundStyle(.secondary)
-
-                StepCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Profile is live")
-                            .font(.headline)
-                        Text("Your creator page is published and visible to fans.")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Button("Sign out", action: onSignOut)
-                    .buttonStyle(.bordered)
-            }
-            .padding(20)
-        }
-    }
-}
-
 private struct MetricCard: View {
     let title: String
     let value: String

@@ -10,6 +10,7 @@ struct ContentView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @State private var route: AuthRoute = .home
     @State private var creatorSetupViewModel: CreatorSetupViewModel?
+    @State private var isEditingPublishedSetup = false
 
     var body: some View {
         NavigationStack {
@@ -54,16 +55,25 @@ struct ContentView: View {
     @ViewBuilder
     private func authenticatedRoot(user: AppUser) -> some View {
         if user.accountType == .creator {
-            if authViewModel.shouldShowCreatorOnboarding, let creatorSetupViewModel {
+            if shouldShowCreatorSetup, let creatorSetupViewModel {
                 CreatorSetupWizardView(viewModel: creatorSetupViewModel) {
                     authViewModel.markCreatorOnboardingPublished()
+                    isEditingPublishedSetup = false
                 }
                 .frame(maxWidth: 760)
             } else {
-                CreatorDashboardHomeView(user: user) {
-                    authViewModel.signOut()
-                    route = .home
-                }
+                CreatorHomeView(
+                    user: user,
+                    onEditSetup: {
+                        isEditingPublishedSetup = true
+                        configureCreatorSetupViewModel(forceReload: true)
+                    },
+                    onSignOut: {
+                        authViewModel.signOut()
+                        isEditingPublishedSetup = false
+                        route = .home
+                    }
+                )
                 .frame(maxWidth: 760)
             }
         } else {
@@ -75,12 +85,16 @@ struct ContentView: View {
         }
     }
 
-    private func configureCreatorSetupViewModel() {
+    private var shouldShowCreatorSetup: Bool {
+        authViewModel.shouldShowCreatorOnboarding || isEditingPublishedSetup
+    }
+
+    private func configureCreatorSetupViewModel(forceReload: Bool = false) {
         guard let user = authViewModel.currentUser, user.accountType == .creator else {
             creatorSetupViewModel = nil
             return
         }
-        if creatorSetupViewModel?.user.id != user.id {
+        if forceReload || creatorSetupViewModel?.user.id != user.id {
             creatorSetupViewModel = CreatorSetupViewModel(user: user)
         }
     }

@@ -19,6 +19,9 @@
 		B2C3D4E5F601000000000102 /* AuthViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */; };
 		B2C3D4E5F601000000000103 /* SecureCredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F601000000000204 /* SecureCredentialStore.swift */; };
 		B2C3D4E5F601000000000104 /* LocalCreatorBackendServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F601000000000205 /* LocalCreatorBackendServiceTests.swift */; };
+		C3D4E5F60100000000000101 /* CreatorHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000201 /* CreatorHomeViewModel.swift */; };
+		C3D4E5F60100000000000102 /* CreatorHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000202 /* CreatorHomeView.swift */; };
+		C3D4E5F60100000000000103 /* CreatorHomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +50,8 @@
 		B2C3D4E5F601000000000203 /* AixcamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AixcamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B2C3D4E5F601000000000204 /* SecureCredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureCredentialStore.swift; sourceTree = "<group>"; };
 		B2C3D4E5F601000000000205 /* LocalCreatorBackendServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalCreatorBackendServiceTests.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000201 /* CreatorHomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeViewModel.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000202 /* CreatorHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +92,8 @@
 				B2C3D4E5F601000000000204 /* SecureCredentialStore.swift */,
 				A1B2C3D4E5F6010000000209 /* CreatorSetupViewModel.swift */,
 				A1B2C3D4E5F6010000000210 /* CreatorOnboardingViews.swift */,
+				C3D4E5F60100000000000201 /* CreatorHomeViewModel.swift */,
+				C3D4E5F60100000000000202 /* CreatorHomeView.swift */,
 				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
@@ -228,6 +235,8 @@
 				B2C3D4E5F601000000000103 /* SecureCredentialStore.swift in Sources */,
 				A1B2C3D4E5F6010000000107 /* CreatorSetupViewModel.swift in Sources */,
 				A1B2C3D4E5F6010000000108 /* CreatorOnboardingViews.swift in Sources */,
+				C3D4E5F60100000000000101 /* CreatorHomeViewModel.swift in Sources */,
+				C3D4E5F60100000000000102 /* CreatorHomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
