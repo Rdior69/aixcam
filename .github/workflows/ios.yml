@@ -12,14 +12,64 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+        run: |
+          set -euo pipefail
+          if [ -d /Applications/Xcode_16.4.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          elif [ -d /Applications/Xcode_16.3.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.3.app/Contents/Developer
+          elif [ -d /Applications/Xcode_16.2.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          else
+            sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          fi
+          xcodebuild -version
+          xcrun simctl list devices available
 
       - name: Test Aixcam
-        run: >
-          xcodebuild test
-          -scheme Aixcam
-          -destination 'platform=iOS Simulator,name=iPhone 16'
-          CODE_SIGNING_ALLOWED=NO
+        run: |
+          set -euo pipefail
+          DESTINATION="$(
+            python3 - <<'PY'
+          import json, subprocess, sys
+
+          raw = subprocess.check_output(
+              ["xcrun", "simctl", "list", "devices", "available", "-j"],
+              text=True,
+          )
+          data = json.loads(raw)
+          preferred = [
+              "iPhone 16",
+              "iPhone 16 Pro",
+              "iPhone 16e",
+              "iPhone 15",
+              "iPhone 15 Pro",
+              "iPhone 17",
+              "iPhone 17 Pro",
+          ]
+          devices = []
+          for items in data.get("devices", {}).values():
+              for device in items:
+                  name = device.get("name", "")
+                  if device.get("isAvailable") and name.startswith("iPhone"):
+                      devices.append(device)
+
+          by_name = {device["name"]: device for device in devices}
+          chosen = next((by_name[name] for name in preferred if name in by_name), None)
+          if chosen is None and devices:
+              chosen = devices[0]
+          if chosen is None:
+              print("No available iPhone simulators found", file=sys.stderr)
+              raise SystemExit(1)
+
+          print(f"platform=iOS Simulator,id={chosen['udid']}")
+          PY
+          )"
+          echo "Using destination: ${DESTINATION}"
+          xcodebuild test \
+            -scheme Aixcam \
+            -destination "${DESTINATION}" \
+            CODE_SIGNING_ALLOWED=NO
