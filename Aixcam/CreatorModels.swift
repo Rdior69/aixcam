@@ -92,7 +92,7 @@ struct CreatorOnboardingDraft: Codable, Equatable {
         content = CreatorContentSetup()
         subscriptions = CreatorSubscriptionSetup()
         aiStudio = CreatorAIStudioSetup()
-        dashboard = CreatorDashboardSnapshot.sample
+        dashboard = .empty
         publishedProfileURL = nil
         lastUpdatedAt = Date()
     }
@@ -335,7 +335,63 @@ struct CreatorDashboardSnapshot: Codable, Equatable {
     var engagementRate: Double
     var earningsByMonth: [EarningsPoint]
     var contentPerformance: [ContentPerformancePoint]
+    var isDemoData: Bool
 
+    enum CodingKeys: String, CodingKey {
+        case monthlyRevenue, subscriberCount, profileViews, engagementRate
+        case earningsByMonth, contentPerformance, isDemoData
+    }
+
+    init(
+        monthlyRevenue: Double,
+        subscriberCount: Int,
+        profileViews: Int,
+        engagementRate: Double,
+        earningsByMonth: [EarningsPoint],
+        contentPerformance: [ContentPerformancePoint],
+        isDemoData: Bool
+    ) {
+        self.monthlyRevenue = monthlyRevenue
+        self.subscriberCount = subscriberCount
+        self.profileViews = profileViews
+        self.engagementRate = engagementRate
+        self.earningsByMonth = earningsByMonth
+        self.contentPerformance = contentPerformance
+        self.isDemoData = isDemoData
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        monthlyRevenue = try container.decode(Double.self, forKey: .monthlyRevenue)
+        subscriberCount = try container.decode(Int.self, forKey: .subscriberCount)
+        profileViews = try container.decode(Int.self, forKey: .profileViews)
+        engagementRate = try container.decode(Double.self, forKey: .engagementRate)
+        earningsByMonth = try container.decode([EarningsPoint].self, forKey: .earningsByMonth)
+        contentPerformance = try container.decode([ContentPerformancePoint].self, forKey: .contentPerformance)
+        isDemoData = try container.decodeIfPresent(Bool.self, forKey: .isDemoData) ?? false
+    }
+
+    static let empty = CreatorDashboardSnapshot(
+        monthlyRevenue: 0,
+        subscriberCount: 0,
+        profileViews: 0,
+        engagementRate: 0,
+        earningsByMonth: [
+            EarningsPoint(monthLabel: "Jan", value: 0),
+            EarningsPoint(monthLabel: "Feb", value: 0),
+            EarningsPoint(monthLabel: "Mar", value: 0),
+            EarningsPoint(monthLabel: "Apr", value: 0)
+        ],
+        contentPerformance: [
+            ContentPerformancePoint(category: "Livestream", score: 0),
+            ContentPerformancePoint(category: "Photos", score: 0),
+            ContentPerformancePoint(category: "Videos", score: 0),
+            ContentPerformancePoint(category: "Stories", score: 0)
+        ],
+        isDemoData: false
+    )
+
+    /// Optional preview dataset for design demos — not used for new drafts.
     static let sample = CreatorDashboardSnapshot(
         monthlyRevenue: 18240.58,
         subscriberCount: 1432,
@@ -352,7 +408,8 @@ struct CreatorDashboardSnapshot: Codable, Equatable {
             ContentPerformancePoint(category: "Photos", score: 81),
             ContentPerformancePoint(category: "Videos", score: 88),
             ContentPerformancePoint(category: "Stories", score: 74)
-        ]
+        ],
+        isDemoData: true
     )
 }
 

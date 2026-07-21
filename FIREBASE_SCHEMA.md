@@ -1,4 +1,4 @@
-# AIXLive Creator Backend Schema
+# Aixcam Creator Backend Schema
 
 ## Firestore Collections
 
@@ -47,9 +47,17 @@
   - Input: `{ prompt: string }`
   - Output: `{ caption: string }`
   - Used by onboarding step 5 AI Studio.
+  - Source: `functions/index.js`
+
+## Public profile URLs
+
+Published creator pages use `https://aixcam.app/creator/{slug}`.
 
 ## Real-time Flows
 
 - Client listens to `creatorDrafts/{uid}` snapshot updates.
 - Any update in profile, branding, content, subscriptions, or AI settings rehydrates the wizard instantly.
 
+## Runtime note
+
+Until Firebase packages and `GoogleService-Info.plist` are added to the Xcode project, the iOS app uses `LocalCreatorBackendService`.

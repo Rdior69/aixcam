@@ -10,6 +10,7 @@ struct ContentView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @State private var route: AuthRoute = .home
     @State private var creatorSetupViewModel: CreatorSetupViewModel?
+    @State private var showCreatorSetup = false
 
     var body: some View {
         NavigationStack {
@@ -43,7 +44,8 @@ struct ContentView: View {
                 authViewModel.resetStatus()
             }
             .onChange(of: authViewModel.currentUser?.id) { _, _ in
-                configureCreatorSetupViewModel()
+                showCreatorSetup = false
+                configureCreatorSetupViewModel(forceReload: true)
             }
             .task {
                 configureCreatorSetupViewModel()
@@ -54,17 +56,46 @@ struct ContentView: View {
     @ViewBuilder
     private func authenticatedRoot(user: AppUser) -> some View {
         if user.accountType == .creator {
-            if authViewModel.shouldShowCreatorOnboarding, let creatorSetupViewModel {
-                CreatorSetupWizardView(viewModel: creatorSetupViewModel) {
-                    authViewModel.markCreatorOnboardingPublished()
-                }
-                .frame(maxWidth: 760)
-            } else {
-                CreatorDashboardHomeView(user: user) {
+            CreatorHomeView(
+                user: user,
+                needsSetup: authViewModel.shouldShowCreatorOnboarding,
+                onEditSetup: {
+                    configureCreatorSetupViewModel(forceReload: true)
+                    showCreatorSetup = true
+                },
+                onSignOut: {
+                    showCreatorSetup = false
                     authViewModel.signOut()
                     route = .home
                 }
-                .frame(maxWidth: 760)
+            )
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
+            .fullScreenCover(isPresented: $showCreatorSetup) {
+                NavigationStack {
+                    if let creatorSetupViewModel {
+                        CreatorSetupWizardView(
+                            viewModel: creatorSetupViewModel,
+                            onPublished: {
+                                authViewModel.markCreatorOnboardingPublished()
+                                showCreatorSetup = false
+                            },
+                            onOpenCreatorHome: {
+                                showCreatorSetup = false
+                            },
+                            onSignOut: {
+                                showCreatorSetup = false
+                                authViewModel.signOut()
+                                route = .home
+                            }
+                        )
+                    } else {
+                        ProgressView("Loading setup…")
+                            .task {
+                                configureCreatorSetupViewModel(forceReload: true)
+                            }
+                    }
+                }
             }
         } else {
             NonCreatorAccountView(user: user) {
@@ -75,12 +106,12 @@ struct ContentView: View {
         }
     }
 
-    private func configureCreatorSetupViewModel() {
+    private func configureCreatorSetupViewModel(forceReload: Bool = false) {
         guard let user = authViewModel.currentUser, user.accountType == .creator else {
             creatorSetupViewModel = nil
             return
         }
-        if creatorSetupViewModel?.user.id != user.id {
+        if forceReload || creatorSetupViewModel?.user.id != user.id {
             creatorSetupViewModel = CreatorSetupViewModel(user: user)
         }
     }
@@ -96,7 +127,7 @@ private struct HeaderView: View {
             } label: {
                 HStack(spacing: 12) {
                     AixcamIconView(size: 48)
-                    Text("AIXLive")
+                    Text("Aixcam")
                         .font(.headline.weight(.bold))
                 }
             }
@@ -131,7 +162,7 @@ private struct LandingView: View {
                     .minimumScaleFactor(0.72)
                     .lineSpacing(-4)
 
-                Text("Launch premium livestreams, memberships, AI studio workflows, and paid fan experiences from one polished AIXLive workspace.")
+                Text("Launch premium livestreams, memberships, AI studio workflows, and paid fan experiences from one polished Aixcam workspace.")
                     .font(.title3)
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
@@ -173,7 +204,7 @@ private struct SignUpView: View {
 
     var body: some View {
         AuthCard(
-            title: "Create your AIXLive account.",
+            title: "Create your Aixcam account.",
             subtitle: "Sign up to unlock creator onboarding, fan subscriptions, premium content, and AI-powered production tools."
         ) {
             TextField("Full name", text: $name)
@@ -230,7 +261,7 @@ private struct LoginView: View {
 
     var body: some View {
         AuthCard(
-            title: "Welcome back to AIXLive.",
+            title: "Welcome back to Aixcam.",
             subtitle: "Log in to continue your creator setup, media workflow, fan subscriptions, and growth analytics."
         ) {
             TextField("Email address", text: $email)
@@ -260,7 +291,7 @@ private struct LoginView: View {
             .tint(.teal)
             .disabled(authViewModel.isBusy)
 
-            Button("New to AIXLive? Create an account") {
+            Button("New to Aixcam? Create an account") {
                 route = .signup
             }
             .buttonStyle(.plain)
@@ -391,7 +422,7 @@ private struct AixcamIconView: View {
             .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
             .shadow(color: .black.opacity(0.25), radius: size * 0.12, x: 0, y: size * 0.08)
-            .accessibilityLabel("AIXLive app icon")
+            .accessibilityLabel("Aixcam app icon")
     }
 }
 

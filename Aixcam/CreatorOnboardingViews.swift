@@ -5,6 +5,8 @@ import SwiftUI
 struct CreatorSetupWizardView: View {
     @ObservedObject var viewModel: CreatorSetupViewModel
     let onPublished: () -> Void
+    let onOpenCreatorHome: () -> Void
+    let onSignOut: () -> Void
 
     @State private var selectedProfilePhoto: PhotosPickerItem?
     @State private var selectedBannerPhoto: PhotosPickerItem?
@@ -12,71 +14,83 @@ struct CreatorSetupWizardView: View {
     @State private var selectedContentVideo: PhotosPickerItem?
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                stepHeader
-                StepCard {
-                    switch viewModel.currentStep {
-                    case .profile:
-                        ProfileInformationStepView(
-                            draft: $viewModel.draft,
-                            pendingWebsite: $viewModel.pendingWebsite,
-                            pendingSocialHandle: $viewModel.pendingSocialHandle,
-                            pendingSocialPlatform: $viewModel.pendingSocialPlatform,
-                            profilePicker: $selectedProfilePhoto,
-                            bannerPicker: $selectedBannerPhoto,
-                            onAddWebsite: viewModel.addWebsite,
-                            onRemoveWebsite: viewModel.removeWebsite,
-                            onAddSocial: viewModel.addSocialLink,
-                            onRemoveSocial: viewModel.removeSocialLink
-                        )
-                    case .branding:
-                        CreatorBrandingStepView(draft: $viewModel.draft, themeColors: viewModel.themeColors)
-                    case .content:
-                        ContentCreationStepView(
-                            draft: $viewModel.draft,
-                            pendingMediaTitle: $viewModel.pendingMediaTitle,
-                            pendingCategory: $viewModel.pendingCategory,
-                            pendingAlbumTitle: $viewModel.pendingAlbumTitle,
-                            pendingAlbumDescription: $viewModel.pendingAlbumDescription,
-                            photoPicker: $selectedContentPhoto,
-                            videoPicker: $selectedContentVideo,
-                            onMoveMedia: viewModel.moveMedia,
-                            onDeleteMedia: viewModel.deleteMedia,
-                            onAddCategory: viewModel.addCategory,
-                            onAddAlbum: viewModel.addAlbum
-                        )
-                    case .subscriptions:
-                        FanSubscriptionsStepView(
-                            draft: $viewModel.draft,
-                            pendingBenefit: $viewModel.pendingBenefit,
-                            onToggleTier: viewModel.toggleTier,
-                            onAddBenefit: viewModel.addBenefit,
-                            onRemoveBenefit: viewModel.removeBenefit
-                        )
-                    case .aiStudio:
-                        AIStudioStepView(
-                            draft: $viewModel.draft,
-                            onGenerateCaption: viewModel.generateCaptionSuggestion
-                        )
-                    case .dashboard:
-                        DashboardMetricsStepView(draft: viewModel.draft)
-                    case .publish:
-                        PublishStepView(draft: viewModel.draft, isPublishing: viewModel.isPublishing) {
-                            viewModel.publish()
+        VStack(spacing: 0) {
+            wizardTopBar
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+
+            ScrollView {
+                VStack(spacing: 18) {
+                    stepHeader
+                    StepCard {
+                        switch viewModel.currentStep {
+                        case .profile:
+                            ProfileInformationStepView(
+                                draft: $viewModel.draft,
+                                pendingWebsite: $viewModel.pendingWebsite,
+                                pendingSocialHandle: $viewModel.pendingSocialHandle,
+                                pendingSocialPlatform: $viewModel.pendingSocialPlatform,
+                                profilePicker: $selectedProfilePhoto,
+                                bannerPicker: $selectedBannerPhoto,
+                                onAddWebsite: viewModel.addWebsite,
+                                onRemoveWebsite: viewModel.removeWebsite,
+                                onAddSocial: viewModel.addSocialLink,
+                                onRemoveSocial: viewModel.removeSocialLink
+                            )
+                        case .branding:
+                            CreatorBrandingStepView(draft: $viewModel.draft, themeColors: viewModel.themeColors)
+                        case .content:
+                            ContentCreationStepView(
+                                draft: $viewModel.draft,
+                                pendingMediaTitle: $viewModel.pendingMediaTitle,
+                                pendingCategory: $viewModel.pendingCategory,
+                                pendingAlbumTitle: $viewModel.pendingAlbumTitle,
+                                pendingAlbumDescription: $viewModel.pendingAlbumDescription,
+                                photoPicker: $selectedContentPhoto,
+                                videoPicker: $selectedContentVideo,
+                                onMoveMedia: viewModel.moveMedia,
+                                onDeleteMedia: viewModel.deleteMedia,
+                                onAddCategory: viewModel.addCategory,
+                                onAddAlbum: viewModel.addAlbum
+                            )
+                        case .subscriptions:
+                            FanSubscriptionsStepView(
+                                draft: $viewModel.draft,
+                                pendingBenefit: $viewModel.pendingBenefit,
+                                onToggleTier: viewModel.toggleTier,
+                                onAddBenefit: viewModel.addBenefit,
+                                onRemoveBenefit: viewModel.removeBenefit
+                            )
+                        case .aiStudio:
+                            AIStudioStepView(
+                                draft: $viewModel.draft,
+                                onGenerateCaption: viewModel.generateCaptionSuggestion
+                            )
+                        case .dashboard:
+                            DashboardMetricsStepView(draft: viewModel.draft)
+                        case .publish:
+                            PublishStepView(
+                                draft: viewModel.draft,
+                                isPublishing: viewModel.isPublishing,
+                                hasPublished: viewModel.publishedProfile != nil,
+                                onPublish: { viewModel.publish() },
+                                onOpenCreatorHome: onOpenCreatorHome
+                            )
                         }
                     }
+                    if viewModel.errorMessage.isEmpty == false {
+                        MessagePill(text: viewModel.errorMessage, systemImage: "exclamationmark.triangle.fill", tint: .red)
+                    } else if viewModel.bannerMessage.isEmpty == false {
+                        MessagePill(text: viewModel.bannerMessage, systemImage: "checkmark.circle.fill", tint: .green)
+                    }
+                    navigationActions
                 }
-                if viewModel.errorMessage.isEmpty == false {
-                    MessagePill(text: viewModel.errorMessage, systemImage: "exclamationmark.triangle.fill", tint: .red)
-                } else if viewModel.bannerMessage.isEmpty == false {
-                    MessagePill(text: viewModel.bannerMessage, systemImage: "checkmark.circle.fill", tint: .green)
-                }
-                navigationActions
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 22)
         }
+        .background(Color(.systemBackground).ignoresSafeArea())
         .onChange(of: selectedProfilePhoto) { _, newItem in
             uploadSelection(item: newItem, as: .photo, with: viewModel.uploadProfilePhoto)
         }
@@ -89,11 +103,32 @@ struct CreatorSetupWizardView: View {
         .onChange(of: selectedContentVideo) { _, newItem in
             addContentSelection(item: newItem, mediaType: .video)
         }
-        .onChange(of: viewModel.publishedProfile?.publicURL) { _, _ in
+        .onChange(of: viewModel.publishedProfile?.publicURL) { _, newValue in
+            guard newValue != nil else { return }
             onPublished()
         }
         .task {
             viewModel.load()
+        }
+    }
+
+    private var wizardTopBar: some View {
+        HStack(spacing: 10) {
+            Text("Aixcam")
+                .font(.headline.weight(.bold))
+
+            Spacer()
+
+            Button("Creator Home") {
+                onOpenCreatorHome()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.teal)
+
+            Button("Sign out", role: .destructive) {
+                onSignOut()
+            }
+            .buttonStyle(.bordered)
         }
     }
 
@@ -143,6 +178,12 @@ struct CreatorSetupWizardView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Color(hex: viewModel.draft.branding.themeColorHex))
+            } else if viewModel.publishedProfile != nil {
+                Button("Open Creator Home") {
+                    onOpenCreatorHome()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.teal)
             }
         }
     }
@@ -576,6 +617,10 @@ private struct DashboardMetricsStepView: View {
             Text("Step 6 - Creator Dashboard")
                 .font(.headline)
 
+            Text(draft.dashboard.isDemoData ? "Sample preview metrics — not live analytics." : "Live analytics preview.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 MetricCard(title: "Revenue", value: draft.dashboard.monthlyRevenue.formatted(.currency(code: "USD")))
                 MetricCard(title: "Subscribers", value: "\(draft.dashboard.subscriberCount)")
@@ -610,7 +655,9 @@ private struct DashboardMetricsStepView: View {
 private struct PublishStepView: View {
     let draft: CreatorOnboardingDraft
     let isPublishing: Bool
+    let hasPublished: Bool
     let onPublish: () -> Void
+    let onOpenCreatorHome: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -633,7 +680,7 @@ private struct PublishStepView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Preview public fan page")
                             .font(.subheadline.weight(.semibold))
-                        Text("https://aixlive.app/creator/\(draft.branding.customProfilePath)")
+                        Text("https://aixcam.app/creator/\(draft.branding.customProfilePath)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -647,12 +694,19 @@ private struct PublishStepView: View {
                 if isPublishing {
                     ProgressView()
                 } else {
-                    Text("Publish creator profile")
+                    Text(hasPublished ? "Publish again" : "Publish creator profile")
                 }
             }
             .buttonStyle(.borderedProminent)
             .tint(.teal)
             .disabled(isPublishing)
+
+            if hasPublished {
+                Button("Open Creator Home") {
+                    onOpenCreatorHome()
+                }
+                .buttonStyle(.bordered)
+            }
         }
     }
 
@@ -676,35 +730,6 @@ private struct PublishStepView: View {
             Spacer()
             Text(value.isEmpty ? "-" : value)
                 .fontWeight(.medium)
-        }
-    }
-}
-
-struct CreatorDashboardHomeView: View {
-    let user: AppUser
-    let onSignOut: () -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Creator Dashboard")
-                    .font(.largeTitle.bold())
-                Text("Welcome, \(user.name)")
-                    .foregroundStyle(.secondary)
-
-                StepCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Profile is live")
-                            .font(.headline)
-                        Text("Your creator page is published and visible to fans.")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Button("Sign out", action: onSignOut)
-                    .buttonStyle(.bordered)
-            }
-            .padding(20)
         }
     }
 }

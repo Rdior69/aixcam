@@ -1,6 +1,6 @@
 /**
- * Minimal Firebase Cloud Function example used by AI Studio.
- * Deploy this as `generateCaptionSuggestion` and secure it with App Check/Auth.
+ * Minimal Firebase Cloud Function stub used by AI Studio.
+ * Deploy as `generateCaptionSuggestion` and secure with App Check + Auth.
  */
 const functions = require("firebase-functions");
 
