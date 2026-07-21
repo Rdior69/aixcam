@@ -1,18 +1,18 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="512" height="512" rx="120" fill="url(#background)"/>
-  <path d="M145 185C145 160.147 165.147 140 190 140H322C346.853 140 367 160.147 367 185V327C367 351.853 346.853 372 322 372H190C165.147 372 145 351.853 145 327V185Z" fill="#07111F" fill-opacity="0.82"/>
-  <path d="M195 169H259L278 196H323C333.493 196 342 204.507 342 215V319C342 329.493 333.493 338 323 338H189C178.507 338 170 329.493 170 319V194C170 180.193 181.193 169 195 169Z" fill="#FFFFFF" fill-opacity="0.92"/>
-  <circle cx="256" cy="267" r="57" fill="#07111F"/>
-  <circle cx="256" cy="267" r="34" fill="url(#lens)"/>
-  <circle cx="315" cy="224" r="13" fill="#7C3AED"/>
-  <path d="M205 379L230 338H282L307 379H205Z" fill="#07111F" fill-opacity="0.7"/>
+  <path d="M128 168C128 145.909 145.909 128 168 128H344C366.091 128 384 145.909 384 168V308C384 330.091 366.091 348 344 348H168C145.909 348 128 330.091 128 308V168Z" fill="#07111F" fill-opacity="0.88"/>
+  <path d="M176 164H268L292 196H344C355.046 196 364 204.954 364 216V300C364 311.046 355.046 320 344 320H176C164.954 320 156 311.046 156 300V184C156 172.954 164.954 164 176 164Z" fill="#FFFFFF" fill-opacity="0.94"/>
+  <circle cx="256" cy="250" r="58" fill="#07111F"/>
+  <circle cx="256" cy="250" r="36" fill="url(#lens)"/>
+  <circle cx="328" cy="214" r="12" fill="#7C3AED"/>
+  <path d="M198 392L228 348H284L314 392H198Z" fill="#07111F" fill-opacity="0.78"/>
   <defs>
-    <linearGradient id="background" x1="65" y1="61" x2="448" y2="452" gradientUnits="userSpaceOnUse">
+    <linearGradient id="background" x1="48" y1="36" x2="464" y2="476" gradientUnits="userSpaceOnUse">
       <stop stop-color="#2DD4BF"/>
-      <stop offset="0.47" stop-color="#7C3AED"/>
+      <stop offset="0.42" stop-color="#7C3AED"/>
       <stop offset="1" stop-color="#F97316"/>
     </linearGradient>
-    <radialGradient id="lens" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(244 252) rotate(48.8141) scale(59.5399)">
+    <radialGradient id="lens" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(242 234) rotate(48) scale(62)">
       <stop stop-color="#FDE68A"/>
       <stop offset="0.45" stop-color="#38BDF8"/>
       <stop offset="1" stop-color="#7C3AED"/>
