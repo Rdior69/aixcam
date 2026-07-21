@@ -325,8 +325,9 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
 
     private static func makeSalt() -> Data {
         var bytes = [UInt8](repeating: 0, count: 16)
-        let status = bytes.withUnsafeMutableBytes {
-            SecRandomCopyBytes(kSecRandomDefault, bytes.count, $0.baseAddress!)
+        let byteCount = bytes.count
+        let status = bytes.withUnsafeMutableBytes { buffer in
+            SecRandomCopyBytes(kSecRandomDefault, byteCount, buffer.baseAddress!)
         }
         if status != errSecSuccess {
             bytes = Array(UUID().uuidString.utf8)
