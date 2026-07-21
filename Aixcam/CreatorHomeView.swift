@@ -8,6 +8,7 @@ struct CreatorHomeView: View {
     let onSignOut: () -> Void
 
     @State private var appeared = false
+    @State private var showLiveStudio = false
 
     init(
         user: AppUser,
@@ -33,6 +34,7 @@ struct CreatorHomeView: View {
                     if needsSetup {
                         incompleteSetupBanner
                     }
+                    goLiveSection
                     heroSection
                     publicPageSection
                     metricsSection
@@ -53,6 +55,11 @@ struct CreatorHomeView: View {
         }
         .refreshable {
             viewModel.load()
+        }
+        .fullScreenCover(isPresented: $showLiveStudio) {
+            LiveCameraStudioView(creatorDisplayName: viewModel.displayName) {
+                showLiveStudio = false
+            }
         }
     }
 
@@ -93,6 +100,35 @@ struct CreatorHomeView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    private var goLiveSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Live studio")
+                .font(.headline)
+            Text("Open your camera, go live for fans, and manage mute or camera flip from one place.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Button {
+                showLiveStudio = true
+            } label: {
+                Label("Go live", systemImage: "video.fill")
+                    .font(.headline.weight(.bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.teal)
+            .controlSize(.large)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(.teal.opacity(0.35), lineWidth: 1)
+        }
     }
 
     private var heroSection: some View {

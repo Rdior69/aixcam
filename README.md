@@ -11,13 +11,15 @@ What works now:
 - Sign up / login (local prototype auth)
 - Creator vs fan/brand routing
 - Full 7-step creator onboarding wizard with local persistence
+- Creator Home after setup, with growth snapshot and studio summary
+- Live camera studio (preview, go live / end, mute, flip) from Creator Home
 - Publish flow that generates an `https://aixcam.app/creator/{slug}` preview URL
 
 What is not wired yet:
 
 - Live Firebase Auth / Firestore / Storage
+- Real fan delivery / CDN livestream ingest (current live mode is on-device studio + simulated viewers)
 - Real AI caption generation (local string template only)
-- Livestream / camera / gifting product surfaces
 
 ## iOS app
 

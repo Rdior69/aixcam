@@ -22,6 +22,8 @@
 		C3D4E5F60100000000000101 /* CreatorHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000201 /* CreatorHomeViewModel.swift */; };
 		C3D4E5F60100000000000102 /* CreatorHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000202 /* CreatorHomeView.swift */; };
 		C3D4E5F60100000000000103 /* CreatorHomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */; };
+		D4E5F6010000000000000101 /* LiveCameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6010000000000000201 /* LiveCameraViewModel.swift */; };
+		D4E5F6010000000000000102 /* LiveCameraStudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6010000000000000202 /* LiveCameraStudioView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +55,8 @@
 		C3D4E5F60100000000000201 /* CreatorHomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeViewModel.swift; sourceTree = "<group>"; };
 		C3D4E5F60100000000000202 /* CreatorHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeView.swift; sourceTree = "<group>"; };
 		C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeViewModelTests.swift; sourceTree = "<group>"; };
+		D4E5F6010000000000000201 /* LiveCameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCameraViewModel.swift; sourceTree = "<group>"; };
+		D4E5F6010000000000000202 /* LiveCameraStudioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCameraStudioView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +99,8 @@
 				A1B2C3D4E5F6010000000210 /* CreatorOnboardingViews.swift */,
 				C3D4E5F60100000000000201 /* CreatorHomeViewModel.swift */,
 				C3D4E5F60100000000000202 /* CreatorHomeView.swift */,
+				D4E5F6010000000000000201 /* LiveCameraViewModel.swift */,
+				D4E5F6010000000000000202 /* LiveCameraStudioView.swift */,
 				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
@@ -239,6 +245,8 @@
 				A1B2C3D4E5F6010000000108 /* CreatorOnboardingViews.swift in Sources */,
 				C3D4E5F60100000000000101 /* CreatorHomeViewModel.swift in Sources */,
 				C3D4E5F60100000000000102 /* CreatorHomeView.swift in Sources */,
+				D4E5F6010000000000000101 /* LiveCameraViewModel.swift in Sources */,
+				D4E5F6010000000000000102 /* LiveCameraStudioView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -395,6 +403,8 @@
 				INFOPLIST_KEY_CFBundleName = Aixcam;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Aixcam uses the camera so creators can livestream to fans.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Aixcam uses the microphone for live creator audio.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -429,6 +439,8 @@
 				INFOPLIST_KEY_CFBundleName = Aixcam;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Aixcam uses the camera so creators can livestream to fans.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Aixcam uses the microphone for live creator audio.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
