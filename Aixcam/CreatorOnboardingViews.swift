@@ -5,6 +5,7 @@ import SwiftUI
 struct CreatorSetupWizardView: View {
     @ObservedObject var viewModel: CreatorSetupViewModel
     let onPublished: () -> Void
+    let onOpenCreatorHome: () -> Void
 
     @State private var selectedProfilePhoto: PhotosPickerItem?
     @State private var selectedBannerPhoto: PhotosPickerItem?
@@ -14,6 +15,7 @@ struct CreatorSetupWizardView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 18) {
+                wizardTopBar
                 stepHeader
                 StepCard {
                     switch viewModel.currentStep {
@@ -62,9 +64,13 @@ struct CreatorSetupWizardView: View {
                     case .dashboard:
                         DashboardMetricsStepView(draft: viewModel.draft)
                     case .publish:
-                        PublishStepView(draft: viewModel.draft, isPublishing: viewModel.isPublishing) {
-                            viewModel.publish()
-                        }
+                        PublishStepView(
+                            draft: viewModel.draft,
+                            isPublishing: viewModel.isPublishing,
+                            hasPublished: viewModel.publishedProfile != nil,
+                            onPublish: { viewModel.publish() },
+                            onOpenCreatorHome: onOpenCreatorHome
+                        )
                     }
                 }
                 if viewModel.errorMessage.isEmpty == false {
@@ -89,11 +95,24 @@ struct CreatorSetupWizardView: View {
         .onChange(of: selectedContentVideo) { _, newItem in
             addContentSelection(item: newItem, mediaType: .video)
         }
-        .onChange(of: viewModel.publishedProfile?.publicURL) { _, _ in
+        .onChange(of: viewModel.publishedProfile?.publicURL) { _, newValue in
+            guard newValue != nil else { return }
             onPublished()
         }
         .task {
             viewModel.load()
+        }
+    }
+
+    private var wizardTopBar: some View {
+        HStack {
+            Text("Aixcam")
+                .font(.headline.weight(.bold))
+            Spacer()
+            Button("Creator Home") {
+                onOpenCreatorHome()
+            }
+            .buttonStyle(.bordered)
         }
     }
 
@@ -143,6 +162,12 @@ struct CreatorSetupWizardView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Color(hex: viewModel.draft.branding.themeColorHex))
+            } else if viewModel.publishedProfile != nil {
+                Button("Open Creator Home") {
+                    onOpenCreatorHome()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.teal)
             }
         }
     }
@@ -614,7 +639,9 @@ private struct DashboardMetricsStepView: View {
 private struct PublishStepView: View {
     let draft: CreatorOnboardingDraft
     let isPublishing: Bool
+    let hasPublished: Bool
     let onPublish: () -> Void
+    let onOpenCreatorHome: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -651,12 +678,19 @@ private struct PublishStepView: View {
                 if isPublishing {
                     ProgressView()
                 } else {
-                    Text("Publish creator profile")
+                    Text(hasPublished ? "Publish again" : "Publish creator profile")
                 }
             }
             .buttonStyle(.borderedProminent)
             .tint(.teal)
             .disabled(isPublishing)
+
+            if hasPublished {
+                Button("Open Creator Home") {
+                    onOpenCreatorHome()
+                }
+                .buttonStyle(.bordered)
+            }
         }
     }
 

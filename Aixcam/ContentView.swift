@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var route: AuthRoute = .home
     @State private var creatorSetupViewModel: CreatorSetupViewModel?
     @State private var isEditingPublishedSetup = false
+    @State private var prefersCreatorHome = false
 
     var body: some View {
         NavigationStack {
@@ -56,21 +57,38 @@ struct ContentView: View {
     private func authenticatedRoot(user: AppUser) -> some View {
         if user.accountType == .creator {
             if shouldShowCreatorSetup, let creatorSetupViewModel {
-                CreatorSetupWizardView(viewModel: creatorSetupViewModel) {
-                    authViewModel.markCreatorOnboardingPublished()
-                    isEditingPublishedSetup = false
-                }
+                CreatorSetupWizardView(
+                    viewModel: creatorSetupViewModel,
+                    onPublished: {
+                        authViewModel.markCreatorOnboardingPublished()
+                        isEditingPublishedSetup = false
+                        prefersCreatorHome = true
+                    },
+                    onOpenCreatorHome: {
+                        isEditingPublishedSetup = false
+                        prefersCreatorHome = true
+                    }
+                )
                 .frame(maxWidth: 760)
             } else {
                 CreatorHomeView(
                     user: user,
                     onEditSetup: {
+                        prefersCreatorHome = false
                         isEditingPublishedSetup = true
                         configureCreatorSetupViewModel(forceReload: true)
                     },
+                    onContinueSetup: authViewModel.shouldShowCreatorOnboarding
+                        ? {
+                            prefersCreatorHome = false
+                            isEditingPublishedSetup = false
+                            configureCreatorSetupViewModel(forceReload: true)
+                        }
+                        : nil,
                     onSignOut: {
                         authViewModel.signOut()
                         isEditingPublishedSetup = false
+                        prefersCreatorHome = false
                         route = .home
                     }
                 )
@@ -86,7 +104,10 @@ struct ContentView: View {
     }
 
     private var shouldShowCreatorSetup: Bool {
-        authViewModel.shouldShowCreatorOnboarding || isEditingPublishedSetup
+        if isEditingPublishedSetup {
+            return true
+        }
+        return authViewModel.shouldShowCreatorOnboarding && prefersCreatorHome == false
     }
 
     private func configureCreatorSetupViewModel(forceReload: Bool = false) {

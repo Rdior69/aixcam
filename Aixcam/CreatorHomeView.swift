@@ -4,6 +4,7 @@ import SwiftUI
 struct CreatorHomeView: View {
     @StateObject private var viewModel: CreatorHomeViewModel
     let onEditSetup: () -> Void
+    let onContinueSetup: (() -> Void)?
     let onSignOut: () -> Void
 
     @State private var appeared = false
@@ -11,10 +12,12 @@ struct CreatorHomeView: View {
     init(
         user: AppUser,
         onEditSetup: @escaping () -> Void,
+        onContinueSetup: (() -> Void)? = nil,
         onSignOut: @escaping () -> Void
     ) {
         _viewModel = StateObject(wrappedValue: CreatorHomeViewModel(user: user))
         self.onEditSetup = onEditSetup
+        self.onContinueSetup = onContinueSetup
         self.onSignOut = onSignOut
     }
 
@@ -203,15 +206,38 @@ struct CreatorHomeView: View {
 
     private var actionsSection: some View {
         VStack(spacing: 12) {
-            Button {
-                onEditSetup()
-            } label: {
-                Label("Edit creator setup", systemImage: "slider.horizontal.3")
-                    .frame(maxWidth: .infinity)
+            if let onContinueSetup {
+                Button {
+                    onContinueSetup()
+                } label: {
+                    Label("Continue creator setup", systemImage: "list.bullet.clipboard")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.teal)
+                .controlSize(.large)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.teal)
-            .controlSize(.large)
+
+            if onContinueSetup == nil {
+                Button {
+                    onEditSetup()
+                } label: {
+                    Label("Edit creator setup", systemImage: "slider.horizontal.3")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.teal)
+                .controlSize(.large)
+            } else {
+                Button {
+                    onEditSetup()
+                } label: {
+                    Label("Open full setup wizard", systemImage: "slider.horizontal.3")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+            }
 
             Button("Sign out", action: onSignOut)
                 .buttonStyle(.bordered)
