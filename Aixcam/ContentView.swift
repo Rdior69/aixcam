@@ -10,8 +10,7 @@ struct ContentView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @State private var route: AuthRoute = .home
     @State private var creatorSetupViewModel: CreatorSetupViewModel?
-    @State private var isEditingPublishedSetup = false
-    @State private var prefersCreatorHome = false
+    @State private var showCreatorSetup = false
 
     var body: some View {
         NavigationStack {
@@ -44,11 +43,18 @@ struct ContentView: View {
             .onChange(of: route) {
                 authViewModel.resetStatus()
             }
-            .onChange(of: authViewModel.currentUser?.id) { _, _ in
-                configureCreatorSetupViewModel()
+            .onChange(of: authViewModel.currentUser?.id) { _, newID in
+                showCreatorSetup = false
+                configureCreatorSetupViewModel(forceReload: true)
+                if newID != nil, authViewModel.shouldShowCreatorOnboarding {
+                    showCreatorSetup = true
+                }
             }
             .task {
                 configureCreatorSetupViewModel()
+                if authViewModel.shouldShowCreatorOnboarding {
+                    showCreatorSetup = true
+                }
             }
         }
     }
@@ -56,43 +62,46 @@ struct ContentView: View {
     @ViewBuilder
     private func authenticatedRoot(user: AppUser) -> some View {
         if user.accountType == .creator {
-            if shouldShowCreatorSetup, let creatorSetupViewModel {
-                CreatorSetupWizardView(
-                    viewModel: creatorSetupViewModel,
-                    onPublished: {
-                        authViewModel.markCreatorOnboardingPublished()
-                        isEditingPublishedSetup = false
-                        prefersCreatorHome = true
-                    },
-                    onOpenCreatorHome: {
-                        isEditingPublishedSetup = false
-                        prefersCreatorHome = true
+            CreatorHomeView(
+                user: user,
+                needsSetup: authViewModel.shouldShowCreatorOnboarding,
+                onEditSetup: {
+                    configureCreatorSetupViewModel(forceReload: true)
+                    showCreatorSetup = true
+                },
+                onSignOut: {
+                    showCreatorSetup = false
+                    authViewModel.signOut()
+                    route = .home
+                }
+            )
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
+            .fullScreenCover(isPresented: $showCreatorSetup) {
+                NavigationStack {
+                    if let creatorSetupViewModel {
+                        CreatorSetupWizardView(
+                            viewModel: creatorSetupViewModel,
+                            onPublished: {
+                                authViewModel.markCreatorOnboardingPublished()
+                                showCreatorSetup = false
+                            },
+                            onOpenCreatorHome: {
+                                showCreatorSetup = false
+                            },
+                            onSignOut: {
+                                showCreatorSetup = false
+                                authViewModel.signOut()
+                                route = .home
+                            }
+                        )
+                    } else {
+                        ProgressView("Loading setup…")
+                            .task {
+                                configureCreatorSetupViewModel(forceReload: true)
+                            }
                     }
-                )
-                .frame(maxWidth: 760)
-            } else {
-                CreatorHomeView(
-                    user: user,
-                    onEditSetup: {
-                        prefersCreatorHome = false
-                        isEditingPublishedSetup = true
-                        configureCreatorSetupViewModel(forceReload: true)
-                    },
-                    onContinueSetup: authViewModel.shouldShowCreatorOnboarding
-                        ? {
-                            prefersCreatorHome = false
-                            isEditingPublishedSetup = false
-                            configureCreatorSetupViewModel(forceReload: true)
-                        }
-                        : nil,
-                    onSignOut: {
-                        authViewModel.signOut()
-                        isEditingPublishedSetup = false
-                        prefersCreatorHome = false
-                        route = .home
-                    }
-                )
-                .frame(maxWidth: 760)
+                }
             }
         } else {
             NonCreatorAccountView(user: user) {
@@ -101,13 +110,6 @@ struct ContentView: View {
             }
             .frame(maxWidth: 760)
         }
-    }
-
-    private var shouldShowCreatorSetup: Bool {
-        if isEditingPublishedSetup {
-            return true
-        }
-        return authViewModel.shouldShowCreatorOnboarding && prefersCreatorHome == false
     }
 
     private func configureCreatorSetupViewModel(forceReload: Bool = false) {

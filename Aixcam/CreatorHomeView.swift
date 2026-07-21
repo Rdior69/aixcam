@@ -3,38 +3,47 @@ import SwiftUI
 
 struct CreatorHomeView: View {
     @StateObject private var viewModel: CreatorHomeViewModel
+    let needsSetup: Bool
     let onEditSetup: () -> Void
-    let onContinueSetup: (() -> Void)?
     let onSignOut: () -> Void
 
     @State private var appeared = false
 
     init(
         user: AppUser,
+        needsSetup: Bool = false,
         onEditSetup: @escaping () -> Void,
-        onContinueSetup: (() -> Void)? = nil,
         onSignOut: @escaping () -> Void
     ) {
         _viewModel = StateObject(wrappedValue: CreatorHomeViewModel(user: user))
+        self.needsSetup = needsSetup
         self.onEditSetup = onEditSetup
-        self.onContinueSetup = onContinueSetup
         self.onSignOut = onSignOut
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                topBar
-                heroSection
-                publicPageSection
-                metricsSection
-                studioSection
-                actionsSection
+        VStack(spacing: 0) {
+            topBar
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    if needsSetup {
+                        incompleteSetupBanner
+                    }
+                    heroSection
+                    publicPageSection
+                    metricsSection
+                    studioSection
+                    actionsSection
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 18)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 24)
-            .opacity(appeared ? 1 : 0)
-            .offset(y: appeared ? 0 : 18)
         }
         .task {
             viewModel.load()
@@ -60,23 +69,41 @@ struct CreatorHomeView: View {
 
             Spacer()
 
-            Button("Sign out", action: onSignOut)
+            Button("Sign out", role: .destructive, action: onSignOut)
                 .buttonStyle(.bordered)
         }
+    }
+
+    private var incompleteSetupBanner: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Finish creator setup")
+                .font(.headline)
+            Text("Your page isn’t published yet. Continue setup when you’re ready.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Button {
+                onEditSetup()
+            } label: {
+                Label("Continue setup", systemImage: "list.bullet.clipboard")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.teal)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var heroSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text("Live")
+                Text(needsSetup ? "Draft" : "Live")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.teal)
+                    .foregroundStyle(needsSetup ? .orange : .teal)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(.teal.opacity(0.16), in: Capsule())
-                    .overlay {
-                        Capsule().stroke(.teal.opacity(0.35), lineWidth: 1)
-                    }
+                    .background((needsSetup ? Color.orange : Color.teal).opacity(0.16), in: Capsule())
 
                 Text("@\(viewModel.username)")
                     .font(.subheadline.weight(.semibold))
@@ -87,10 +114,14 @@ struct CreatorHomeView: View {
                 .font(.system(size: 34, weight: .black, design: .rounded))
                 .minimumScaleFactor(0.8)
 
-            Text("Your creator page is published. Track growth, manage studio assets, and keep your fan page fresh.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .lineSpacing(3)
+            Text(
+                needsSetup
+                    ? "You’re on Creator Home. Open setup anytime to finish publishing your page."
+                    : "Your creator page is published. Track growth, manage studio assets, and keep your fan page fresh."
+            )
+            .font(.body)
+            .foregroundStyle(.secondary)
+            .lineSpacing(3)
 
             if viewModel.isLoading {
                 ProgressView()
@@ -206,40 +237,20 @@ struct CreatorHomeView: View {
 
     private var actionsSection: some View {
         VStack(spacing: 12) {
-            if let onContinueSetup {
-                Button {
-                    onContinueSetup()
-                } label: {
-                    Label("Continue creator setup", systemImage: "list.bullet.clipboard")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.teal)
-                .controlSize(.large)
+            Button {
+                onEditSetup()
+            } label: {
+                Label(
+                    needsSetup ? "Continue creator setup" : "Edit creator setup",
+                    systemImage: "slider.horizontal.3"
+                )
+                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .tint(.teal)
+            .controlSize(.large)
 
-            if onContinueSetup == nil {
-                Button {
-                    onEditSetup()
-                } label: {
-                    Label("Edit creator setup", systemImage: "slider.horizontal.3")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.teal)
-                .controlSize(.large)
-            } else {
-                Button {
-                    onEditSetup()
-                } label: {
-                    Label("Open full setup wizard", systemImage: "slider.horizontal.3")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-            }
-
-            Button("Sign out", action: onSignOut)
+            Button("Sign out", role: .destructive, action: onSignOut)
                 .buttonStyle(.bordered)
                 .frame(maxWidth: .infinity)
         }

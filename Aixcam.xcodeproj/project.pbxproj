@@ -52,6 +52,7 @@
 		B2C3D4E5F601000000000205 /* LocalCreatorBackendServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalCreatorBackendServiceTests.swift; sourceTree = "<group>"; };
 		C3D4E5F60100000000000201 /* CreatorHomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeViewModel.swift; sourceTree = "<group>"; };
 		C3D4E5F60100000000000202 /* CreatorHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeView.swift; sourceTree = "<group>"; };
+		C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeViewModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,6 +124,7 @@
 			children = (
 				B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */,
 				B2C3D4E5F601000000000205 /* LocalCreatorBackendServiceTests.swift */,
+				C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */,
 			);
 			path = AixcamTests;
 			sourceTree = "<group>";
@@ -246,6 +248,7 @@
 			files = (
 				B2C3D4E5F601000000000102 /* AuthViewModelTests.swift in Sources */,
 				B2C3D4E5F601000000000104 /* LocalCreatorBackendServiceTests.swift in Sources */,
+				C3D4E5F60100000000000103 /* CreatorHomeViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
