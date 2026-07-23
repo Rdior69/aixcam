@@ -1,19 +1,13 @@
 import SwiftUI
 
-#if canImport(FirebaseCore)
-import FirebaseCore
-#endif
-
 @main
 struct AixcamApp: App {
     @StateObject private var sessionManager: SessionManager
 
     init() {
-        #if canImport(FirebaseCore)
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
-        #endif
+        // Only configures Firebase when GoogleService-Info.plist is in the bundle.
+        // Otherwise the app stays on the local Keychain-backed backend.
+        _ = FirebaseBootstrap.configureIfPossible()
         let authViewModel = AuthViewModel(restoreSessionOnInit: false)
         _sessionManager = StateObject(wrappedValue: SessionManager(authViewModel: authViewModel))
     }

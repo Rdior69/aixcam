@@ -9,6 +9,15 @@
 - `accountType: "Creator" | "Fan or member" | "Brand partner"`
 - `createdAt: number` (milliseconds since epoch)
 - `hasPublishedCreatorProfile: boolean`
+- `accountStatus: "active" | "suspended" | "restricted"` (default `active`)
+- `hasCompletedSubscriberOnboarding: boolean` (default `false`)
+
+## Authentication
+
+- Provider: Firebase Auth **Email/Password** when Firebase is active
+- Local fallback: Keychain members via `LocalCreatorBackendService`
+- Activate steps: `Docs/FIREBASE_AUTH.md`
+- Auth errors map through `FirebaseAuthErrorMapper` → `CreatorBackendError`
 
 ### `creatorDrafts/{uid}`
 - `profile: map`
@@ -60,4 +69,4 @@ Published creator pages use `https://aixcam.app/creator/{slug}`.
 
 ## Runtime note
 
-Until Firebase packages and `GoogleService-Info.plist` are added to the Xcode project, the iOS app uses `LocalCreatorBackendService`.
+`FirebaseBootstrap` only calls `FirebaseApp.configure()` when `GoogleService-Info.plist` is in the app bundle. Until Firebase packages are linked **and** that plist is present, the iOS app uses `LocalCreatorBackendService`. See `Docs/FIREBASE_AUTH.md`.

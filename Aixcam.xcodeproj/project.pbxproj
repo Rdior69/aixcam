@@ -29,6 +29,13 @@
 		E5F601000000000000000103 /* RootSessionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F601000000000000000203 /* RootSessionViews.swift */; };
 		E5F601000000000000000104 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F601000000000000000204 /* RootView.swift */; };
 		E5F601000000000000000105 /* SessionRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F601000000000000000205 /* SessionRouterTests.swift */; };
+		F60100000000000000000101 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000501 /* FirebaseAuth */; };
+		F60100000000000000000102 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000502 /* FirebaseFirestore */; };
+		F60100000000000000000103 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000503 /* FirebaseStorage */; };
+		F60100000000000000000104 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000504 /* FirebaseFunctions */; };
+		F60100000000000000000105 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000505 /* FirebaseCore */; };
+		F60100000000000000000201 /* FirebaseBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60100000000000000000301 /* FirebaseBootstrap.swift */; };
+		F60100000000000000000202 /* FirebaseBootstrapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60100000000000000000302 /* FirebaseBootstrapTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,6 +74,8 @@
 		E5F601000000000000000203 /* RootSessionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootSessionViews.swift; sourceTree = "<group>"; };
 		E5F601000000000000000204 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		E5F601000000000000000205 /* SessionRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRouterTests.swift; sourceTree = "<group>"; };
+		F60100000000000000000301 /* FirebaseBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseBootstrap.swift; sourceTree = "<group>"; };
+		F60100000000000000000302 /* FirebaseBootstrapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseBootstrapTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +83,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F60100000000000000000105 /* FirebaseCore in Frameworks */,
+				F60100000000000000000101 /* FirebaseAuth in Frameworks */,
+				F60100000000000000000102 /* FirebaseFirestore in Frameworks */,
+				F60100000000000000000103 /* FirebaseStorage in Frameworks */,
+				F60100000000000000000104 /* FirebaseFunctions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -115,6 +129,7 @@
 				E5F601000000000000000202 /* SessionManager.swift */,
 				E5F601000000000000000203 /* RootSessionViews.swift */,
 				E5F601000000000000000204 /* RootView.swift */,
+				F60100000000000000000301 /* FirebaseBootstrap.swift */,
 				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
@@ -146,6 +161,7 @@
 				B2C3D4E5F601000000000205 /* LocalCreatorBackendServiceTests.swift */,
 				C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */,
 				E5F601000000000000000205 /* SessionRouterTests.swift */,
+				F60100000000000000000302 /* FirebaseBootstrapTests.swift */,
 			);
 			path = AixcamTests;
 			sourceTree = "<group>";
@@ -166,6 +182,13 @@
 			dependencies = (
 			);
 			name = Aixcam;
+			packageProductDependencies = (
+				F60100000000000000000505 /* FirebaseCore */,
+				F60100000000000000000501 /* FirebaseAuth */,
+				F60100000000000000000502 /* FirebaseFirestore */,
+				F60100000000000000000503 /* FirebaseStorage */,
+				F60100000000000000000504 /* FirebaseFunctions */,
+			);
 			productName = Aixcam;
 			productReference = A1B2C3D4E5F6010000000206 /* Aixcam.app */;
 			productType = "com.apple.product-type.application";
@@ -216,6 +239,9 @@
 				Base,
 			);
 			mainGroup = A1B2C3D4E5F6010000000401;
+			packageReferences = (
+				F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = A1B2C3D4E5F6010000000404 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -266,6 +292,7 @@
 				E5F601000000000000000102 /* SessionManager.swift in Sources */,
 				E5F601000000000000000103 /* RootSessionViews.swift in Sources */,
 				E5F601000000000000000104 /* RootView.swift in Sources */,
+				F60100000000000000000201 /* FirebaseBootstrap.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +304,7 @@
 				B2C3D4E5F601000000000104 /* LocalCreatorBackendServiceTests.swift in Sources */,
 				C3D4E5F60100000000000103 /* CreatorHomeViewModelTests.swift in Sources */,
 				E5F601000000000000000105 /* SessionRouterTests.swift in Sources */,
+				F60100000000000000000202 /* FirebaseBootstrapTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -559,6 +587,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F60100000000000000000501 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		F60100000000000000000502 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		F60100000000000000000503 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		F60100000000000000000504 /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
+		F60100000000000000000505 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A1B2C3D4E5F6010000000701 /* Project object */;
 }

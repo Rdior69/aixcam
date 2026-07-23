@@ -3,7 +3,8 @@
 ## Current phase
 
 - Phase A: Discovery plan — complete
-- Phase B: Root navigation + session management — complete (awaiting approval before Phase C)
+- Phase B: Root navigation + session management — complete
+- Phase C: Auth + Firebase activate/fallback — complete (awaiting approval before Phase D)
 
 ## Root routing
 
@@ -19,8 +20,19 @@
 | `subscriberHome` | Subscriber shell |
 | `accountBlocked` | Suspended / restricted |
 
+## Backend selection (Phase C)
+
+`FirebaseBootstrap.configureIfPossible()` runs at launch.
+
+| Condition | Backend |
+|-----------|---------|
+| No Firebase SDK linked, or no `GoogleService-Info.plist` in bundle | `LocalCreatorBackendService` (Keychain) |
+| SDK linked **and** plist present **and** `FirebaseApp` configured | `FirebaseCreatorBackendService` |
+
+See `Docs/FIREBASE_AUTH.md` for the activate checklist.
+
 ## Defaults for this epic
 
 - Display brand remains **Aixcam**
 - Fan (and temporarily Brand) map to the subscriber experience
-- Firebase stays optional until Phase C (local backend default)
+- Firebase is optional; local auth remains the default without a real plist

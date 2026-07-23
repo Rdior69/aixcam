@@ -9,7 +9,7 @@ struct SignUpPayload {
     var accountType: AccountType
 }
 
-enum CreatorBackendError: LocalizedError {
+enum CreatorBackendError: LocalizedError, Equatable {
     case invalidInput(String)
     case duplicateEmail
     case invalidCredentials
@@ -51,11 +51,15 @@ protocol CreatorBackendServicing {
 enum CreatorBackendFactory {
     static func makeService() -> CreatorBackendServicing {
         #if canImport(FirebaseAuth) && canImport(FirebaseFirestore) && canImport(FirebaseStorage) && canImport(FirebaseFunctions) && canImport(FirebaseCore)
-        if FirebaseRuntimeAvailability.isFirebaseConfigured {
+        if FirebaseBootstrap.isReadyForFirebaseBackend {
             return FirebaseCreatorBackendService()
         }
         #endif
         return LocalCreatorBackendService.shared
+    }
+
+    static var activeKind: CreatorBackendKind {
+        FirebaseBootstrap.activeBackendKind
     }
 }
 
@@ -139,7 +143,9 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
             email: cleanedEmail,
             accountType: payload.accountType,
             createdAt: Date(),
-            hasPublishedCreatorProfile: false
+            hasPublishedCreatorProfile: false,
+            accountStatus: .active,
+            hasCompletedSubscriberOnboarding: false
         )
         let memberRecord = MemberRecord(
             user: newUser,
@@ -358,12 +364,6 @@ import FirebaseFirestore
 import FirebaseFunctions
 import FirebaseStorage
 
-private enum FirebaseRuntimeAvailability {
-    static var isFirebaseConfigured: Bool {
-        FirebaseApp.app() != nil
-    }
-}
-
 final class FirebaseCreatorBackendService: CreatorBackendServicing {
     private let auth = Auth.auth()
     private let firestore = Firestore.firestore()
@@ -393,42 +393,73 @@ final class FirebaseCreatorBackendService: CreatorBackendServicing {
             throw CreatorBackendError.invalidInput("Use a password with at least 8 characters.")
         }
 
-        let result = try await auth.createUser(withEmail: cleanedEmail, password: payload.password)
-        let user = AppUser(
-            id: result.user.uid,
-            name: cleanedName,
-            email: cleanedEmail,
-            accountType: payload.accountType,
-            createdAt: Date(),
-            hasPublishedCreatorProfile: false
-        )
-        try await firestore.collection("users").document(user.id).setData(try encodeDictionary(user))
-        if payload.accountType == .creator {
-            let draft = CreatorOnboardingDraft(user: user)
-            try await firestore.collection("creatorDrafts").document(user.id).setData(try encodeDictionary(draft))
+        do {
+            let result = try await auth.createUser(withEmail: cleanedEmail, password: payload.password)
+            let user = AppUser(
+                id: result.user.uid,
+                name: cleanedName,
+                email: cleanedEmail,
+                accountType: payload.accountType,
+                createdAt: Date(),
+                hasPublishedCreatorProfile: false,
+                accountStatus: .active,
+                hasCompletedSubscriberOnboarding: false
+            )
+            try await firestore.collection("users").document(user.id).setData(try encodeDictionary(user))
+            if payload.accountType == .creator {
+                let draft = CreatorOnboardingDraft(user: user)
+                try await firestore.collection("creatorDrafts").document(user.id).setData(try encodeDictionary(draft))
+            }
+            return user
+        } catch {
+            throw mapFirebaseError(error)
         }
-        return user
     }
 
     func login(email: String, password: String) async throws -> AppUser {
-        let result = try await auth.signIn(withEmail: email, password: password)
-        let snapshot = try await firestore.collection("users").document(result.user.uid).getDocument()
-        guard let data = snapshot.data() else {
-            throw CreatorBackendError.missingUser
+        do {
+            let result = try await auth.signIn(withEmail: email, password: password)
+            let snapshot = try await firestore.collection("users").document(result.user.uid).getDocument()
+            guard let data = snapshot.data() else {
+                throw CreatorBackendError.missingUser
+            }
+            return try decodeObject(AppUser.self, from: data)
+        } catch let error as CreatorBackendError {
+            throw error
+        } catch {
+            throw mapFirebaseError(error)
         }
-        return try decodeObject(AppUser.self, from: data)
     }
 
     func refreshUser(userID: String) async throws -> AppUser {
-        let snapshot = try await firestore.collection("users").document(userID).getDocument()
-        guard let data = snapshot.data() else {
+        // Session is invalid if Firebase Auth no longer has this user signed in.
+        guard let current = auth.currentUser, current.uid == userID else {
             throw CreatorBackendError.missingUser
         }
-        return try decodeObject(AppUser.self, from: data)
+
+        do {
+            let snapshot = try await firestore.collection("users").document(userID).getDocument()
+            guard let data = snapshot.data() else {
+                throw CreatorBackendError.missingUser
+            }
+            return try decodeObject(AppUser.self, from: data)
+        } catch let error as CreatorBackendError {
+            throw error
+        } catch {
+            throw mapFirebaseError(error)
+        }
     }
 
     func signOut() async throws {
-        try auth.signOut()
+        do {
+            try auth.signOut()
+        } catch {
+            throw mapFirebaseError(error)
+        }
+    }
+
+    private func mapFirebaseError(_ error: Error) -> CreatorBackendError {
+        FirebaseAuthErrorMapper.map(error) ?? .unknown
     }
 
     func loadCreatorDraft(userID: String) async throws -> CreatorOnboardingDraft? {
