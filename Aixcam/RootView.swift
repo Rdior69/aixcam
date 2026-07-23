@@ -3,6 +3,8 @@ import SwiftUI
 struct RootView: View {
     @EnvironmentObject private var sessionManager: SessionManager
     @EnvironmentObject private var authViewModel: AuthViewModel
+    @EnvironmentObject private var appLock: AppLockController
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ZStack {
@@ -17,13 +19,48 @@ struct RootView: View {
                 UnauthenticatedRootView()
                     .transition(.opacity)
 
+            case .creatorHome, .creatorNeedsOnboarding,
+                 .subscriberHome, .subscriberNeedsOnboarding,
+                 .accountBlocked:
+                authenticatedContent
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: sessionManager.rootRoute)
+        .animation(.easeInOut(duration: 0.2), value: appLock.isLocked)
+        .task {
+            await sessionManager.bootstrap()
+            if authViewModel.isAuthenticated {
+                appLock.evaluateAuthenticatedEntry()
+            }
+        }
+        .onChange(of: authViewModel.currentUser?.id) { _, newValue in
+            if newValue != nil {
+                appLock.evaluateAuthenticatedEntry()
+            } else {
+                // Signed out — unlock gate is irrelevant on welcome.
+                if appLock.isLocked {
+                    // Keep PIN configured; just clear transient lock UI.
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            appLock.handleScenePhase(newPhase, isAuthenticated: authViewModel.isAuthenticated)
+        }
+    }
+
+    @ViewBuilder
+    private var authenticatedContent: some View {
+        if appLock.isAppLockActive && appLock.isLocked {
+            UnlockView()
+        } else {
+            switch sessionManager.rootRoute {
             case .creatorHome, .creatorNeedsOnboarding:
                 if let user = authViewModel.currentUser {
                     CreatorAuthenticatedRoot(
                         user: user,
                         needsSetup: sessionManager.rootRoute == .creatorNeedsOnboarding
                     )
-                    .transition(.opacity)
                 } else {
                     LaunchScreenView()
                 }
@@ -35,7 +72,6 @@ struct RootView: View {
                         needsOnboarding: sessionManager.rootRoute == .subscriberNeedsOnboarding,
                         onSignOut: { authViewModel.signOut() }
                     )
-                    .transition(.opacity)
                 } else {
                     LaunchScreenView()
                 }
@@ -47,15 +83,13 @@ struct RootView: View {
                         status: status,
                         onSignOut: { authViewModel.signOut() }
                     )
-                    .transition(.opacity)
                 } else {
                     LaunchScreenView()
                 }
+
+            case .launching, .unauthenticated:
+                LaunchScreenView()
             }
-        }
-        .animation(.easeInOut(duration: 0.25), value: sessionManager.rootRoute)
-        .task {
-            await sessionManager.bootstrap()
         }
     }
 }

@@ -9,6 +9,7 @@ struct CreatorHomeView: View {
 
     @State private var appeared = false
     @State private var showLiveStudio = false
+    @State private var showAppLockSettings = false
 
     init(
         user: AppUser,
@@ -61,6 +62,9 @@ struct CreatorHomeView: View {
                 showLiveStudio = false
             }
         }
+        .sheet(isPresented: $showAppLockSettings) {
+            AppLockSettingsView()
+        }
     }
 
     private var topBar: some View {
@@ -80,6 +84,14 @@ struct CreatorHomeView: View {
             }
 
             Spacer()
+
+            Button {
+                showAppLockSettings = true
+            } label: {
+                Image(systemName: "lock.shield")
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("App Lock settings")
 
             Button("Sign out", role: .destructive, action: onSignOut)
                 .buttonStyle(.bordered)

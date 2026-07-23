@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct AixcamApp: App {
     @StateObject private var sessionManager: SessionManager
+    @StateObject private var appLock: AppLockController
 
     init() {
         // Only configures Firebase when GoogleService-Info.plist is in the bundle.
@@ -10,6 +11,7 @@ struct AixcamApp: App {
         _ = FirebaseBootstrap.configureIfPossible()
         let authViewModel = AuthViewModel(restoreSessionOnInit: false)
         _sessionManager = StateObject(wrappedValue: SessionManager(authViewModel: authViewModel))
+        _appLock = StateObject(wrappedValue: AppLockController())
     }
 
     var body: some Scene {
@@ -17,6 +19,7 @@ struct AixcamApp: App {
             RootView()
                 .environmentObject(sessionManager)
                 .environmentObject(sessionManager.authViewModel)
+                .environmentObject(appLock)
         }
     }
 }

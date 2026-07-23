@@ -457,7 +457,12 @@ private struct PillText: View {
 #Preview {
     let auth = AuthViewModel(restoreSessionOnInit: false)
     let session = SessionManager(authViewModel: auth)
+    let lock = AppLockController(
+        store: AppLockStore(credentialStore: MemoryCredentialStore()),
+        biometricService: StubBiometricAuthService(canUseBiometrics: false)
+    )
     return RootView()
         .environmentObject(session)
         .environmentObject(auth)
+        .environmentObject(lock)
 }

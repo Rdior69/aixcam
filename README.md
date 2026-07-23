@@ -11,6 +11,7 @@ What works now:
 - Launch screen + centralized session routing (`SessionManager`)
 - Sign up / login (local by default; Firebase when activated)
 - Safe Firebase bootstrap (skips `configure()` when plist is missing)
+- Opt-in App Lock (4-digit PIN + Face ID / Touch ID) after sign-in
 - Creator vs subscriber-role routing (fan/brand map to subscriber shell)
 - Full 7-step creator onboarding wizard with local persistence
 - Creator Home after setup, with growth snapshot and studio summary
@@ -39,6 +40,7 @@ What is not wired yet:
 | `Aixcam/AuthViewModel.swift` | Session state; revalidates on launch |
 | `Aixcam/CreatorModels.swift` | Onboarding models |
 | `Aixcam/FirebaseBootstrap.swift` | Safe Firebase configure + auth error mapping |
+| `Aixcam/AppLockController.swift` / `UnlockView.swift` | PIN + biometric App Lock |
 | `Aixcam/CreatorBackendService.swift` | Local + Firebase-ready backend |
 | `Aixcam/SecureCredentialStore.swift` | Keychain storage for local credentials |
 | `Aixcam/CreatorSetupViewModel.swift` | Wizard state + persistence |

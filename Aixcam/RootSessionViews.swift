@@ -102,6 +102,8 @@ struct SubscriberHomeView: View {
     let needsOnboarding: Bool
     let onSignOut: () -> Void
 
+    @State private var showAppLockSettings = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -114,6 +116,13 @@ struct SubscriberHomeView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
+                    Button {
+                        showAppLockSettings = true
+                    } label: {
+                        Image(systemName: "lock.shield")
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("App Lock settings")
                     Button("Sign out", role: .destructive, action: onSignOut)
                         .buttonStyle(.bordered)
                 }
@@ -148,5 +157,8 @@ struct SubscriberHomeView: View {
         }
         .frame(maxWidth: 760)
         .frame(maxWidth: .infinity)
+        .sheet(isPresented: $showAppLockSettings) {
+            AppLockSettingsView()
+        }
     }
 }
