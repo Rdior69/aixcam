@@ -12,13 +12,6 @@
 - `accountStatus: "active" | "suspended" | "restricted"` (default `active`)
 - `hasCompletedSubscriberOnboarding: boolean` (default `false`)
 
-## Authentication
-
-- Provider: Firebase Auth **Email/Password** when Firebase is active
-- Local fallback: Keychain members via `LocalCreatorBackendService`
-- Activate steps: `Docs/FIREBASE_AUTH.md`
-- Auth errors map through `FirebaseAuthErrorMapper` → `CreatorBackendError`
-
 ### `creatorDrafts/{uid}`
 - `profile: map`
   - `profilePhotoURL: string`
@@ -43,6 +36,13 @@
 - `dashboard: map`
 - `publishedProfileURL: string | null`
 - `lastUpdatedAt: number` (milliseconds since epoch)
+
+## Authentication
+
+- Provider: Firebase Auth **Email/Password** when Firebase is active
+- Local fallback: Keychain members via `LocalCreatorBackendService`
+- Activate steps: `Docs/FIREBASE_AUTH.md`
+- Auth errors map through `FirebaseAuthErrorMapper` → `CreatorBackendError`
 
 ## Storage Structure
 
