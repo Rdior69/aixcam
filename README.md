@@ -12,8 +12,9 @@ What works now:
 - Sign up / login (local by default; Firebase when activated)
 - Safe Firebase bootstrap (skips `configure()` when plist is missing)
 - Opt-in App Lock (4-digit PIN + Face ID / Touch ID) after sign-in
+- Creator 7-step onboarding (auto-opens when unpublished; step resume)
+- Subscriber 4-step onboarding for Fan/Brand accounts
 - Creator vs subscriber-role routing (fan/brand map to subscriber shell)
-- Full 7-step creator onboarding wizard with local persistence
 - Creator Home after setup, with growth snapshot and studio summary
 - Live camera studio (preview, go live / end, mute, flip) from Creator Home
 - Publish flow that generates an `https://aixcam.app/creator/{slug}` preview URL

@@ -33,5 +33,10 @@ service cloud.firestore {
       allow create, read, update: if isOwner(uid);
       allow delete: if false;
     }
+
+    match /subscriberDrafts/{uid} {
+      allow create, read, update: if isOwner(uid);
+      allow delete: if false;
+    }
   }
 }

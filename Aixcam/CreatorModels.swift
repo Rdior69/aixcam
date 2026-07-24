@@ -126,6 +126,13 @@ struct CreatorOnboardingDraft: Codable, Equatable {
     var dashboard: CreatorDashboardSnapshot
     var publishedProfileURL: String?
     var lastUpdatedAt: Date
+    /// Persisted wizard resume point (Phase E).
+    var currentStepRawValue: Int
+
+    enum CodingKeys: String, CodingKey {
+        case profile, branding, content, subscriptions, aiStudio, dashboard
+        case publishedProfileURL, lastUpdatedAt, currentStepRawValue
+    }
 
     init(user: AppUser) {
         profile = CreatorProfileInfo(
@@ -139,6 +146,21 @@ struct CreatorOnboardingDraft: Codable, Equatable {
         dashboard = .empty
         publishedProfileURL = nil
         lastUpdatedAt = Date()
+        currentStepRawValue = CreatorOnboardingStep.profile.rawValue
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        profile = try container.decode(CreatorProfileInfo.self, forKey: .profile)
+        branding = try container.decode(CreatorBranding.self, forKey: .branding)
+        content = try container.decode(CreatorContentSetup.self, forKey: .content)
+        subscriptions = try container.decode(CreatorSubscriptionSetup.self, forKey: .subscriptions)
+        aiStudio = try container.decode(CreatorAIStudioSetup.self, forKey: .aiStudio)
+        dashboard = try container.decode(CreatorDashboardSnapshot.self, forKey: .dashboard)
+        publishedProfileURL = try container.decodeIfPresent(String.self, forKey: .publishedProfileURL)
+        lastUpdatedAt = try container.decode(Date.self, forKey: .lastUpdatedAt)
+        currentStepRawValue = try container.decodeIfPresent(Int.self, forKey: .currentStepRawValue)
+            ?? CreatorOnboardingStep.profile.rawValue
     }
 }
 

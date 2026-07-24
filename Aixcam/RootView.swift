@@ -62,10 +62,9 @@ struct RootView: View {
 
             case .subscriberHome, .subscriberNeedsOnboarding:
                 if let user = authViewModel.currentUser {
-                    SubscriberHomeView(
+                    SubscriberAuthenticatedRoot(
                         user: user,
-                        needsOnboarding: sessionManager.rootRoute == .subscriberNeedsOnboarding,
-                        onSignOut: { authViewModel.signOut() }
+                        needsOnboarding: sessionManager.rootRoute == .subscriberNeedsOnboarding
                     )
                 } else {
                     LaunchScreenView()

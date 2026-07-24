@@ -103,6 +103,14 @@ struct CreatorAuthenticatedRoot: View {
         }
         .task {
             configureCreatorSetupViewModel()
+            if needsSetup {
+                showCreatorSetup = true
+            }
+        }
+        .onChange(of: needsSetup) { _, needs in
+            if needs {
+                showCreatorSetup = true
+            }
         }
     }
 

@@ -36,6 +36,16 @@
 - `dashboard: map`
 - `publishedProfileURL: string | null`
 - `lastUpdatedAt: number` (milliseconds since epoch)
+- `currentStepRawValue: number` (wizard resume index)
+
+### `subscriberDrafts/{uid}`
+- `displayName: string`
+- `bio: string`
+- `interests: string[]`
+- `notifyNewDrops: boolean`
+- `notifyLiveSessions: boolean`
+- `currentStepRawValue: number`
+- `lastUpdatedAt: number` (milliseconds since epoch)
 
 ## Authentication
 

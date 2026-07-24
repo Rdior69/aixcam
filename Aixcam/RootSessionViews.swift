@@ -100,6 +100,7 @@ struct AccountStatusView: View {
 struct SubscriberHomeView: View {
     let user: AppUser
     let needsOnboarding: Bool
+    let onContinueSetup: () -> Void
     let onSignOut: () -> Void
 
     @State private var showAppLockSettings = false
@@ -134,24 +135,32 @@ struct SubscriberHomeView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Finish subscriber setup")
                             .font(.headline)
-                        Text("Subscriber onboarding arrives in a later phase. You can explore the home shell now.")
+                        Text("Add a display name, interests, and notification preferences to personalize Aixcam.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                        Button {
+                            onContinueSetup()
+                        } label: {
+                            Label("Continue setup", systemImage: "list.bullet.clipboard")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.teal)
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                } else {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("You're set up")
+                            .font(.headline)
+                        Text("Discovery, subscriptions, and private sessions arrive in later phases. App Lock is available anytime from the shield icon.")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(18)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Coming next")
-                        .font(.headline)
-                    Text("Discover creators, subscriptions, private sessions, and purchased highlights will land in later phases.")
-                        .foregroundStyle(.secondary)
-                }
-                .padding(18)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             }
             .padding(20)
         }

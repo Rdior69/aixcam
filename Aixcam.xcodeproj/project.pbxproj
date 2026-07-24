@@ -42,6 +42,10 @@
 		D60100000000000000000104 /* AppLockController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000204 /* AppLockController.swift */; };
 		D60100000000000000000105 /* UnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000205 /* UnlockView.swift */; };
 		D60100000000000000000106 /* AppLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000206 /* AppLockTests.swift */; };
+		E60100000000000000000101 /* SubscriberModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60100000000000000000201 /* SubscriberModels.swift */; };
+		E60100000000000000000102 /* SubscriberSetupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60100000000000000000202 /* SubscriberSetupViewModel.swift */; };
+		E60100000000000000000103 /* SubscriberOnboardingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60100000000000000000203 /* SubscriberOnboardingViews.swift */; };
+		E60100000000000000000104 /* SubscriberOnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60100000000000000000204 /* SubscriberOnboardingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +92,10 @@
 		D60100000000000000000204 /* AppLockController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockController.swift; sourceTree = "<group>"; };
 		D60100000000000000000205 /* UnlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockView.swift; sourceTree = "<group>"; };
 		D60100000000000000000206 /* AppLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockTests.swift; sourceTree = "<group>"; };
+		E60100000000000000000201 /* SubscriberModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriberModels.swift; sourceTree = "<group>"; };
+		E60100000000000000000202 /* SubscriberSetupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriberSetupViewModel.swift; sourceTree = "<group>"; };
+		E60100000000000000000203 /* SubscriberOnboardingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriberOnboardingViews.swift; sourceTree = "<group>"; };
+		E60100000000000000000204 /* SubscriberOnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriberOnboardingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +155,9 @@
 				D60100000000000000000203 /* BiometricAuthService.swift */,
 				D60100000000000000000204 /* AppLockController.swift */,
 				D60100000000000000000205 /* UnlockView.swift */,
+				E60100000000000000000201 /* SubscriberModels.swift */,
+				E60100000000000000000202 /* SubscriberSetupViewModel.swift */,
+				E60100000000000000000203 /* SubscriberOnboardingViews.swift */,
 				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
@@ -180,6 +191,7 @@
 				E5F601000000000000000205 /* SessionRouterTests.swift */,
 				F60100000000000000000302 /* FirebaseBootstrapTests.swift */,
 				D60100000000000000000206 /* AppLockTests.swift */,
+				E60100000000000000000204 /* SubscriberOnboardingTests.swift */,
 			);
 			path = AixcamTests;
 			sourceTree = "<group>";
@@ -316,6 +328,9 @@
 				D60100000000000000000103 /* BiometricAuthService.swift in Sources */,
 				D60100000000000000000104 /* AppLockController.swift in Sources */,
 				D60100000000000000000105 /* UnlockView.swift in Sources */,
+				E60100000000000000000101 /* SubscriberModels.swift in Sources */,
+				E60100000000000000000102 /* SubscriberSetupViewModel.swift in Sources */,
+				E60100000000000000000103 /* SubscriberOnboardingViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -329,6 +344,7 @@
 				E5F601000000000000000105 /* SessionRouterTests.swift in Sources */,
 				F60100000000000000000202 /* FirebaseBootstrapTests.swift in Sources */,
 				D60100000000000000000106 /* AppLockTests.swift in Sources */,
+				E60100000000000000000104 /* SubscriberOnboardingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

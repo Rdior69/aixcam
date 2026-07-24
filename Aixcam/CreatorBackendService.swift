@@ -46,6 +46,9 @@ protocol CreatorBackendServicing {
     func publishCreatorProfile(userID: String, draft: CreatorOnboardingDraft) async throws -> PublishedCreatorProfile
     func uploadAsset(userID: String, data: Data, mediaType: CreatorMediaType) async throws -> String
     func generateCaptionSuggestion(prompt: String) async throws -> String
+    func loadSubscriberDraft(userID: String) async throws -> SubscriberOnboardingDraft?
+    func saveSubscriberDraft(userID: String, draft: SubscriberOnboardingDraft) async throws
+    func completeSubscriberOnboarding(userID: String, draft: SubscriberOnboardingDraft) async throws -> AppUser
 }
 
 enum CreatorBackendFactory {
@@ -91,6 +94,7 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
 
     private let membersStorageKey = "aixcam.members.v3"
     private let draftStorageKey = "aixcam.creatorDrafts.v2"
+    private let subscriberDraftStorageKey = "aixcam.subscriberDrafts.v1"
     private let credentialStore: SecureCredentialStoring
     private let userDefaults: UserDefaults
     private let encoder: JSONEncoder
@@ -98,6 +102,7 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
 
     private var membersByEmail: [String: MemberRecord]
     private var draftsByUserID: [String: CreatorOnboardingDraft]
+    private var subscriberDraftsByUserID: [String: SubscriberOnboardingDraft]
     private var draftContinuations: [String: [UUID: AsyncStream<CreatorOnboardingDraft>.Continuation]]
 
     init(
@@ -112,6 +117,7 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
         decoder.dateDecodingStrategy = .iso8601
         membersByEmail = [:]
         draftsByUserID = [:]
+        subscriberDraftsByUserID = [:]
         draftContinuations = [:]
         loadPersistedState()
     }
@@ -157,6 +163,9 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
         if payload.accountType == .creator {
             draftsByUserID[newUser.id] = CreatorOnboardingDraft(user: newUser)
             persistDrafts()
+        } else if payload.accountType.isSubscriberRole {
+            subscriberDraftsByUserID[newUser.id] = SubscriberOnboardingDraft(user: newUser)
+            persistSubscriberDrafts()
         }
         return newUser
     }
@@ -273,6 +282,42 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
         return "New drop alert: \(base) - tap in for behind-the-scenes access and premium creator updates."
     }
 
+    func loadSubscriberDraft(userID: String) async throws -> SubscriberOnboardingDraft? {
+        subscriberDraftsByUserID[userID]
+    }
+
+    func saveSubscriberDraft(userID: String, draft: SubscriberOnboardingDraft) async throws {
+        var updated = draft
+        updated.lastUpdatedAt = Date()
+        subscriberDraftsByUserID[userID] = updated
+        persistSubscriberDrafts()
+    }
+
+    func completeSubscriberOnboarding(userID: String, draft: SubscriberOnboardingDraft) async throws -> AppUser {
+        guard var member = memberRecord(for: userID)?.user else {
+            throw CreatorBackendError.missingUser
+        }
+        let name = draft.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard name.isEmpty == false else {
+            throw CreatorBackendError.invalidInput("Enter a display name to finish setup.")
+        }
+        guard draft.interests.isEmpty == false else {
+            throw CreatorBackendError.invalidInput("Pick at least one interest.")
+        }
+
+        var updatedDraft = draft
+        updatedDraft.displayName = name
+        updatedDraft.lastUpdatedAt = Date()
+        subscriberDraftsByUserID[userID] = updatedDraft
+        persistSubscriberDrafts()
+
+        member.name = name
+        member.hasCompletedSubscriberOnboarding = true
+        updateMember(member)
+        try persistMembers()
+        return member
+    }
+
     private func isValidEmail(_ email: String) -> Bool {
         let emailPattern = #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#
         guard let range = email.range(of: emailPattern, options: [.regularExpression, .caseInsensitive]) else {
@@ -312,6 +357,11 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
            let decoded = try? decoder.decode([String: CreatorOnboardingDraft].self, from: draftData) {
             draftsByUserID = decoded
         }
+
+        if let subscriberData = userDefaults.data(forKey: subscriberDraftStorageKey),
+           let decoded = try? decoder.decode([String: SubscriberOnboardingDraft].self, from: subscriberData) {
+            subscriberDraftsByUserID = decoded
+        }
     }
 
     private func persistMembers() throws {
@@ -326,6 +376,12 @@ final class LocalCreatorBackendService: CreatorBackendServicing {
     private func persistDrafts() {
         if let data = try? encoder.encode(draftsByUserID) {
             userDefaults.set(data, forKey: draftStorageKey)
+        }
+    }
+
+    private func persistSubscriberDrafts() {
+        if let data = try? encoder.encode(subscriberDraftsByUserID) {
+            userDefaults.set(data, forKey: subscriberDraftStorageKey)
         }
     }
 
@@ -409,6 +465,9 @@ final class FirebaseCreatorBackendService: CreatorBackendServicing {
             if payload.accountType == .creator {
                 let draft = CreatorOnboardingDraft(user: user)
                 try await firestore.collection("creatorDrafts").document(user.id).setData(try encodeDictionary(draft))
+            } else if payload.accountType.isSubscriberRole {
+                let draft = SubscriberOnboardingDraft(user: user)
+                try await firestore.collection("subscriberDrafts").document(user.id).setData(try encodeDictionary(draft))
             }
             return user
         } catch {
@@ -531,6 +590,38 @@ final class FirebaseCreatorBackendService: CreatorBackendServicing {
             return caption
         }
         throw CreatorBackendError.unknown
+    }
+
+    func loadSubscriberDraft(userID: String) async throws -> SubscriberOnboardingDraft? {
+        let snapshot = try await firestore.collection("subscriberDrafts").document(userID).getDocument()
+        guard let data = snapshot.data() else { return nil }
+        return try decodeObject(SubscriberOnboardingDraft.self, from: data)
+    }
+
+    func saveSubscriberDraft(userID: String, draft: SubscriberOnboardingDraft) async throws {
+        var copy = draft
+        copy.lastUpdatedAt = Date()
+        try await firestore.collection("subscriberDrafts").document(userID).setData(try encodeDictionary(copy), merge: true)
+    }
+
+    func completeSubscriberOnboarding(userID: String, draft: SubscriberOnboardingDraft) async throws -> AppUser {
+        let name = draft.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard name.isEmpty == false else {
+            throw CreatorBackendError.invalidInput("Enter a display name to finish setup.")
+        }
+        guard draft.interests.isEmpty == false else {
+            throw CreatorBackendError.invalidInput("Pick at least one interest.")
+        }
+
+        var copy = draft
+        copy.displayName = name
+        copy.lastUpdatedAt = Date()
+        try await firestore.collection("subscriberDrafts").document(userID).setData(try encodeDictionary(copy), merge: true)
+        try await firestore.collection("users").document(userID).setData([
+            "name": name,
+            "hasCompletedSubscriberOnboarding": true
+        ], merge: true)
+        return try await refreshUser(userID: userID)
     }
 
     private func encodeDictionary<T: Encodable>(_ value: T) throws -> [String: Any] {

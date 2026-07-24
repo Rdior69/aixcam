@@ -26,6 +26,11 @@ final class AuthViewModel: ObservableObject {
         return currentUser.accountType == .creator && currentUser.hasPublishedCreatorProfile == false
     }
 
+    var shouldShowSubscriberOnboarding: Bool {
+        guard let currentUser else { return false }
+        return currentUser.accountType.isSubscriberRole && currentUser.hasCompletedSubscriberOnboarding == false
+    }
+
     init(
         backendService: CreatorBackendServicing = CreatorBackendFactory.makeService(),
         userDefaults: UserDefaults = .standard,
@@ -86,6 +91,17 @@ final class AuthViewModel: ObservableObject {
     func markCreatorOnboardingPublished() {
         guard var user = currentUser else { return }
         user.hasPublishedCreatorProfile = true
+        applyAuthenticatedState(for: user)
+    }
+
+    func markSubscriberOnboardingCompleted() {
+        guard var user = currentUser else { return }
+        user.hasCompletedSubscriberOnboarding = true
+        applyAuthenticatedState(for: user)
+    }
+
+    /// Applies a backend-refreshed user (e.g. after completing onboarding).
+    func applyUser(_ user: AppUser) {
         applyAuthenticatedState(for: user)
     }
 

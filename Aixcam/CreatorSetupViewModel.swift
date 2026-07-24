@@ -90,6 +90,7 @@ final class CreatorSetupViewModel: ObservableObject {
                     draft = CreatorOnboardingDraft(user: user)
                     try await backendService.saveCreatorDraft(userID: user.id, draft: draft)
                 }
+                currentStep = CreatorOnboardingStep(rawValue: draft.currentStepRawValue) ?? .profile
                 attachRealtimeDraftObserver()
             } catch {
                 errorMessage = error.localizedDescription
@@ -109,6 +110,8 @@ final class CreatorSetupViewModel: ObservableObject {
         withAnimation(.smooth) {
             currentStep = next
         }
+        draft.currentStepRawValue = currentStep.rawValue
+        saveProgress(message: "Progress saved.")
     }
 
     func previousStep() {
@@ -118,11 +121,14 @@ final class CreatorSetupViewModel: ObservableObject {
         withAnimation(.smooth) {
             currentStep = previous
         }
+        draft.currentStepRawValue = currentStep.rawValue
+        saveProgress()
     }
 
     func saveProgress(message: String = "Draft saved.") {
         errorMessage = ""
         isSaving = true
+        draft.currentStepRawValue = currentStep.rawValue
         Task {
             do {
                 try await backendService.saveCreatorDraft(userID: user.id, draft: draft)

@@ -5,7 +5,8 @@
 - Phase A: Discovery plan — complete
 - Phase B: Root navigation + session management — complete
 - Phase C: Auth + Firebase activate/fallback — complete
-- Phase D: Biometric / PIN App Lock — complete (awaiting approval before Phase E)
+- Phase D: Biometric / PIN App Lock — complete
+- Phase E: Creator + subscriber onboarding — complete (awaiting approval before Phase F)
 
 ## Root routing
 
@@ -15,11 +16,16 @@
 |-------|---------|
 | `launching` | Splash while session revalidates |
 | `unauthenticated` | Welcome / auth |
-| `creatorNeedsOnboarding` | Creator Home with setup banner |
+| `creatorNeedsOnboarding` | Creator Home + auto setup cover |
 | `creatorHome` | Published creator |
-| `subscriberNeedsOnboarding` | Subscriber shell + setup notice |
-| `subscriberHome` | Subscriber shell |
+| `subscriberNeedsOnboarding` | Subscriber Home + auto setup cover |
+| `subscriberHome` | Subscriber shell after setup |
 | `accountBlocked` | Suspended / restricted |
+
+## Onboarding (Phase E)
+
+- **Creator:** existing 7-step wizard; auto-opens when unpublished; persists `currentStepRawValue` for resume
+- **Subscriber (Fan/Brand):** 4-step wizard (welcome → profile → interests → preferences); completes via `completeSubscriberOnboarding` and sets `hasCompletedSubscriberOnboarding`
 
 ## App Lock (Phase D)
 
@@ -28,8 +34,6 @@ Orthogonal to routing. When App Lock is enabled (4-digit PIN in Keychain):
 1. Authenticated cold start → `UnlockView` until PIN / biometrics succeed
 2. Background timeout (immediate / 1 min / 5 min) → lock again
 3. Settings from Creator / Subscriber home (`lock.shield`)
-
-PIN salt+hash lives in Keychain (`aixcam.appLock.pin.v1`); policy in `aixcam.appLock.policy.v1`.
 
 ## Backend selection (Phase C)
 
