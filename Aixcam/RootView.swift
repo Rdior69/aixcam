@@ -123,5 +123,6 @@ struct BackgroundCanvas: View {
                 .offset(x: 130, y: 20)
         }
         .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 }

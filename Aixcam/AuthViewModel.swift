@@ -10,6 +10,9 @@ final class AuthViewModel: ObservableObject {
     @Published private(set) var currentUser: AppUser?
     @Published var status: AuthStatus = .idle
     @Published private(set) var isBusy = false
+    /// Welcome / signup / login surface for signed-out users. Owned here so
+    /// RootView redraws cannot wipe in-progress auth navigation.
+    @Published var unauthenticatedRoute: AuthRoute = .home
 
     private let sessionStorageKey = "aixcam.currentSession.v2"
     private let backendService: CreatorBackendServicing
@@ -45,6 +48,21 @@ final class AuthViewModel: ObservableObject {
         }
     }
 
+    func showWelcome() {
+        unauthenticatedRoute = .home
+        resetStatus()
+    }
+
+    func showSignUp() {
+        unauthenticatedRoute = .signup
+        resetStatus()
+    }
+
+    func showLogin() {
+        unauthenticatedRoute = .login
+        resetStatus()
+    }
+
     func signUp(name: String, email: String, accountType: AccountType, password: String) {
         isBusy = true
         status = .idle
@@ -60,6 +78,7 @@ final class AuthViewModel: ObservableObject {
                     )
                 )
                 applyAuthenticatedState(for: user)
+                unauthenticatedRoute = .home
                 status = .success("Welcome to Aixcam, \(user.name).")
             } catch {
                 status = .error(error.localizedDescription)
@@ -76,6 +95,7 @@ final class AuthViewModel: ObservableObject {
             do {
                 let user = try await backendService.login(email: email, password: password)
                 applyAuthenticatedState(for: user)
+                unauthenticatedRoute = .home
                 status = .success("Welcome back, \(user.name).")
             } catch {
                 status = .error(error.localizedDescription)
@@ -110,6 +130,7 @@ final class AuthViewModel: ObservableObject {
             try? await backendService.signOut()
             currentUser = nil
             status = .idle
+            unauthenticatedRoute = .home
             userDefaults.removeObject(forKey: sessionStorageKey)
         }
     }

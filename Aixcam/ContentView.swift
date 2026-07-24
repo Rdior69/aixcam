@@ -34,13 +34,11 @@ struct UnauthenticatedRootView: View {
                     .animation(.easeInOut(duration: 0.2), value: route)
                 }
                 .navigationBarHidden(true)
-                .onChange(of: route) { _, newRoute in
+                .onChange(of: route) { _, _ in
                     authViewModel.resetStatus()
                     withAnimation(.easeInOut(duration: 0.2)) {
                         proxy.scrollTo("auth-top", anchor: .top)
                     }
-                    // Keep focus on the active auth surface.
-                    _ = newRoute
                 }
             }
         }
