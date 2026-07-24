@@ -10,6 +10,7 @@ final class SessionManager: ObservableObject {
     let authViewModel: AuthViewModel
 
     private var cancellables = Set<AnyCancellable>()
+    private var hasCompletedBootstrap = false
 
     init(authViewModel: AuthViewModel = AuthViewModel(restoreSessionOnInit: false)) {
         self.authViewModel = authViewModel
@@ -17,6 +18,14 @@ final class SessionManager: ObservableObject {
     }
 
     func bootstrap() async {
+        // Idempotent: RootView `.task` can restart on redraws; don't bounce
+        // users back through launch and wipe in-progress auth UI state.
+        if hasCompletedBootstrap {
+            await authViewModel.revalidateSession()
+            refreshRoute()
+            return
+        }
+
         isBootstrapping = true
         rootRoute = .launching
 
@@ -25,6 +34,7 @@ final class SessionManager: ObservableObject {
         await authViewModel.revalidateSession()
         refreshRoute()
         isBootstrapping = false
+        hasCompletedBootstrap = true
     }
 
     func refreshRoute() {

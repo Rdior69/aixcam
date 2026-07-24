@@ -12,29 +12,40 @@ struct UnauthenticatedRootView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 28) {
-                    HeaderView(route: $route)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: 28) {
+                        HeaderView(route: $route)
+                            .id("auth-top")
 
-                    switch route {
-                    case .home:
-                        LandingView(route: $route)
-                    case .signup:
-                        SignUpView(route: $route)
-                    case .login:
-                        LoginView(route: $route)
+                        switch route {
+                        case .home:
+                            LandingView(route: $route)
+                        case .signup:
+                            SignUpView(route: $route)
+                        case .login:
+                            LoginView(route: $route)
+                        }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 24)
+                    .frame(maxWidth: 720)
+                    .frame(maxWidth: .infinity)
+                    .animation(.easeInOut(duration: 0.2), value: route)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 24)
-                .frame(maxWidth: 720)
-                .frame(maxWidth: .infinity)
-            }
-            .navigationBarHidden(true)
-            .onChange(of: route) {
-                authViewModel.resetStatus()
+                .navigationBarHidden(true)
+                .onChange(of: route) { _, newRoute in
+                    authViewModel.resetStatus()
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        proxy.scrollTo("auth-top", anchor: .top)
+                    }
+                    // Keep focus on the active auth surface.
+                    _ = newRoute
+                }
             }
         }
+        // Stable identity so parent RootView redraws don't wipe local auth routing.
+        .id("unauthenticated-root")
     }
 }
 
@@ -150,12 +161,16 @@ private struct HeaderView: View {
             Spacer()
 
             Button("Login") {
-                route = .login
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    route = .login
+                }
             }
             .buttonStyle(.bordered)
 
-            Button("Join") {
-                route = .signup
+            Button("Sign up") {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    route = .signup
+                }
             }
             .buttonStyle(.borderedProminent)
             .tint(.teal)
@@ -184,17 +199,22 @@ private struct LandingView: View {
 
             VStack(spacing: 12) {
                 Button {
-                    route = .signup
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        route = .signup
+                    }
                 } label: {
-                    Label("Create your account", systemImage: "person.badge.plus")
+                    Label("Sign up", systemImage: "person.badge.plus")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .tint(.teal)
+                .accessibilityIdentifier("landing-sign-up")
 
                 Button {
-                    route = .login
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        route = .login
+                    }
                 } label: {
                     Label("I already have an account", systemImage: "person.crop.circle")
                         .frame(maxWidth: .infinity)
@@ -305,8 +325,10 @@ private struct LoginView: View {
             .tint(.teal)
             .disabled(authViewModel.isBusy)
 
-            Button("New to Aixcam? Create an account") {
-                route = .signup
+            Button("New to Aixcam? Sign up") {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    route = .signup
+                }
             }
             .buttonStyle(.plain)
             .foregroundStyle(.teal)
