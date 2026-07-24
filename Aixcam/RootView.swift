@@ -37,11 +37,6 @@ struct RootView: View {
         .onChange(of: authViewModel.currentUser?.id) { _, newValue in
             if newValue != nil {
                 appLock.evaluateAuthenticatedEntry()
-            } else {
-                // Signed out — unlock gate is irrelevant on welcome.
-                if appLock.isLocked {
-                    // Keep PIN configured; just clear transient lock UI.
-                }
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
