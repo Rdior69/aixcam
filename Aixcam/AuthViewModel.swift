@@ -126,12 +126,15 @@ final class AuthViewModel: ObservableObject {
     }
 
     func signOut() {
+        // Clear session synchronously so welcome stays up and a restarted
+        // bootstrap/revalidate cannot resurrect the previous account mid-tap.
+        currentUser = nil
+        status = .idle
+        isBusy = false
+        unauthenticatedRoute = .home
+        userDefaults.removeObject(forKey: sessionStorageKey)
         Task {
             try? await backendService.signOut()
-            currentUser = nil
-            status = .idle
-            unauthenticatedRoute = .home
-            userDefaults.removeObject(forKey: sessionStorageKey)
         }
     }
 

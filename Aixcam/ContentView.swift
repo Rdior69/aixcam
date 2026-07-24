@@ -8,13 +8,14 @@ struct ContentView: View {
 
 struct UnauthenticatedRootView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
+    @State private var presentedAuthForm: AuthRoute?
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 28) {
-                    HeaderView()
-                    LandingView()
+                    HeaderView(onLogin: { presentedAuthForm = .login }, onSignUp: { presentedAuthForm = .signup })
+                    LandingView(onLogin: { presentedAuthForm = .login }, onSignUp: { presentedAuthForm = .signup })
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 24)
@@ -24,47 +25,31 @@ struct UnauthenticatedRootView: View {
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .fullScreenCover(item: authCoverBinding) { route in
+        .fullScreenCover(item: $presentedAuthForm) { route in
             NavigationStack {
                 Group {
                     switch route {
                     case .signup:
-                        SignUpView()
+                        SignUpView(onSwitchToLogin: { presentedAuthForm = .login })
                     case .login:
-                        LoginView()
+                        LoginView(onSwitchToSignUp: { presentedAuthForm = .signup })
                     case .home:
                         EmptyView()
                     }
                 }
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") {
-                            authViewModel.showWelcome()
-                        }
+                        Button("Close") { presentedAuthForm = nil }
                     }
                 }
             }
         }
-    }
-
-    private var authCoverBinding: Binding<AuthRoute?> {
-        Binding(
-            get: {
-                switch authViewModel.unauthenticatedRoute {
-                case .signup, .login:
-                    return authViewModel.unauthenticatedRoute
-                case .home:
-                    return nil
-                }
-            },
-            set: { newValue in
-                if newValue == nil {
-                    authViewModel.showWelcome()
-                } else if let newValue {
-                    authViewModel.unauthenticatedRoute = newValue
-                }
+        .onChange(of: authViewModel.currentUser?.id) { _, newValue in
+            // Account created / logged in → dismiss the form; RootView routes home.
+            if newValue != nil {
+                presentedAuthForm = nil
             }
-        )
+        }
     }
 }
 
@@ -161,39 +146,32 @@ enum AuthRoute: String, Equatable, Identifiable {
 }
 
 private struct HeaderView: View {
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    let onLogin: () -> Void
+    let onSignUp: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            Button {
-                authViewModel.showWelcome()
-            } label: {
-                HStack(spacing: 12) {
-                    AixcamIconView(size: 48)
-                    Text("Aixcam")
-                        .font(.headline.weight(.bold))
-                }
+            HStack(spacing: 12) {
+                AixcamIconView(size: 48)
+                Text("Aixcam")
+                    .font(.headline.weight(.bold))
             }
-            .buttonStyle(.plain)
 
             Spacer()
 
-            Button("Login") {
-                authViewModel.showLogin()
-            }
-            .buttonStyle(.bordered)
+            Button("Login", action: onLogin)
+                .buttonStyle(.bordered)
 
-            Button("Sign up") {
-                authViewModel.showSignUp()
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.teal)
+            Button("Sign up", action: onSignUp)
+                .buttonStyle(.borderedProminent)
+                .tint(.teal)
         }
     }
 }
 
 private struct LandingView: View {
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    let onLogin: () -> Void
+    let onSignUp: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 26) {
@@ -212,9 +190,7 @@ private struct LandingView: View {
             }
 
             VStack(spacing: 12) {
-                Button {
-                    authViewModel.showSignUp()
-                } label: {
+                Button(action: onSignUp) {
                     Label("Sign up", systemImage: "person.badge.plus")
                         .frame(maxWidth: .infinity)
                 }
@@ -223,9 +199,7 @@ private struct LandingView: View {
                 .tint(.teal)
                 .accessibilityIdentifier("landing-sign-up")
 
-                Button {
-                    authViewModel.showLogin()
-                } label: {
+                Button(action: onLogin) {
                     Label("I already have an account", systemImage: "person.crop.circle")
                         .frame(maxWidth: .infinity)
                 }
@@ -240,6 +214,7 @@ private struct LandingView: View {
 
 private struct SignUpView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
+    let onSwitchToLogin: () -> Void
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
@@ -293,11 +268,9 @@ private struct SignUpView: View {
                 .tint(.teal)
                 .disabled(authViewModel.isBusy)
 
-                Button("Already signed up? Login") {
-                    authViewModel.showLogin()
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.teal)
+                Button("Already signed up? Login", action: onSwitchToLogin)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.teal)
             }
             .padding(20)
         }
@@ -307,6 +280,7 @@ private struct SignUpView: View {
 
 private struct LoginView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
+    let onSwitchToSignUp: () -> Void
     @State private var email = ""
     @State private var password = ""
 
@@ -343,11 +317,9 @@ private struct LoginView: View {
                 .tint(.teal)
                 .disabled(authViewModel.isBusy)
 
-                Button("New to Aixcam? Sign up") {
-                    authViewModel.showSignUp()
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.teal)
+                Button("New to Aixcam? Sign up", action: onSwitchToSignUp)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.teal)
             }
             .padding(20)
         }

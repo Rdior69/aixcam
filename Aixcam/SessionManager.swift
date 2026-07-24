@@ -18,13 +18,10 @@ final class SessionManager: ObservableObject {
     }
 
     func bootstrap() async {
-        // Idempotent: RootView `.task` can restart on redraws; don't bounce
-        // users back through launch and wipe in-progress auth UI state.
-        if hasCompletedBootstrap {
-            await authViewModel.revalidateSession()
-            refreshRoute()
-            return
-        }
+        // Only run cold-start once. Presenting signup/login covers can restart
+        // RootView `.task`; re-running revalidate here was restoring a stale
+        // session and jumping users straight to account home.
+        guard hasCompletedBootstrap == false else { return }
 
         isBootstrapping = true
         rootRoute = .launching
