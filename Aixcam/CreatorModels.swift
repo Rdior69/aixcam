@@ -7,6 +7,45 @@ struct AppUser: Codable, Equatable, Identifiable {
     var accountType: AccountType
     var createdAt: Date
     var hasPublishedCreatorProfile: Bool
+    var accountStatus: AccountStatus
+    var hasCompletedSubscriberOnboarding: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, email, accountType, createdAt
+        case hasPublishedCreatorProfile, accountStatus, hasCompletedSubscriberOnboarding
+    }
+
+    init(
+        id: String,
+        name: String,
+        email: String,
+        accountType: AccountType,
+        createdAt: Date,
+        hasPublishedCreatorProfile: Bool,
+        accountStatus: AccountStatus = .active,
+        hasCompletedSubscriberOnboarding: Bool = false
+    ) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.accountType = accountType
+        self.createdAt = createdAt
+        self.hasPublishedCreatorProfile = hasPublishedCreatorProfile
+        self.accountStatus = accountStatus
+        self.hasCompletedSubscriberOnboarding = hasCompletedSubscriberOnboarding
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        email = try container.decode(String.self, forKey: .email)
+        accountType = try container.decode(AccountType.self, forKey: .accountType)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        hasPublishedCreatorProfile = try container.decode(Bool.self, forKey: .hasPublishedCreatorProfile)
+        accountStatus = try container.decodeIfPresent(AccountStatus.self, forKey: .accountStatus) ?? .active
+        hasCompletedSubscriberOnboarding = try container.decodeIfPresent(Bool.self, forKey: .hasCompletedSubscriberOnboarding) ?? false
+    }
 }
 
 enum AccountType: String, CaseIterable, Codable, Identifiable {
@@ -15,6 +54,11 @@ enum AccountType: String, CaseIterable, Codable, Identifiable {
     case brand = "Brand partner"
 
     var id: String { rawValue }
+
+    /// Product direction maps fan (and temporarily brand) onto the subscriber experience.
+    var isSubscriberRole: Bool {
+        self == .fan || self == .brand
+    }
 }
 
 enum AuthStatus: Equatable {
@@ -82,6 +126,13 @@ struct CreatorOnboardingDraft: Codable, Equatable {
     var dashboard: CreatorDashboardSnapshot
     var publishedProfileURL: String?
     var lastUpdatedAt: Date
+    /// Persisted wizard resume point (Phase E).
+    var currentStepRawValue: Int
+
+    enum CodingKeys: String, CodingKey {
+        case profile, branding, content, subscriptions, aiStudio, dashboard
+        case publishedProfileURL, lastUpdatedAt, currentStepRawValue
+    }
 
     init(user: AppUser) {
         profile = CreatorProfileInfo(
@@ -95,6 +146,21 @@ struct CreatorOnboardingDraft: Codable, Equatable {
         dashboard = .empty
         publishedProfileURL = nil
         lastUpdatedAt = Date()
+        currentStepRawValue = CreatorOnboardingStep.profile.rawValue
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        profile = try container.decode(CreatorProfileInfo.self, forKey: .profile)
+        branding = try container.decode(CreatorBranding.self, forKey: .branding)
+        content = try container.decode(CreatorContentSetup.self, forKey: .content)
+        subscriptions = try container.decode(CreatorSubscriptionSetup.self, forKey: .subscriptions)
+        aiStudio = try container.decode(CreatorAIStudioSetup.self, forKey: .aiStudio)
+        dashboard = try container.decode(CreatorDashboardSnapshot.self, forKey: .dashboard)
+        publishedProfileURL = try container.decodeIfPresent(String.self, forKey: .publishedProfileURL)
+        lastUpdatedAt = try container.decode(Date.self, forKey: .lastUpdatedAt)
+        currentStepRawValue = try container.decodeIfPresent(Int.self, forKey: .currentStepRawValue)
+            ?? CreatorOnboardingStep.profile.rawValue
     }
 }
 

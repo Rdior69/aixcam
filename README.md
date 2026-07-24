@@ -4,20 +4,25 @@ Aixcam is a creator platform prototype that combines livestreaming, fan engageme
 
 ## Current status
 
-This repository contains an **iOS SwiftUI prototype**. Today the app runs with a **local backend** (Keychain-backed accounts + on-device drafts). Firebase-shaped service code is present and will activate only after you add the Firebase iOS SDK and a `GoogleService-Info.plist` (never commit the real plist).
+This repository contains an **iOS SwiftUI prototype**. The default backend is **local** (Keychain-backed accounts + on-device drafts). Firebase Auth activates only when the Firebase iOS SDK is linked **and** a real `GoogleService-Info.plist` is in the app bundle (never commit the real plist). See `Docs/FIREBASE_AUTH.md`.
 
 What works now:
 
-- Sign up / login (local prototype auth)
-- Creator vs fan/brand routing
-- Full 7-step creator onboarding wizard with local persistence
+- Launch screen + centralized session routing (`SessionManager`)
+- Sign up / login (local by default; Firebase when activated)
+- Safe Firebase bootstrap (skips `configure()` when plist is missing)
+- Opt-in App Lock (4-digit PIN + Face ID / Touch ID) after sign-in
+- Creator 7-step onboarding (auto-opens when unpublished; step resume)
+- Subscriber 4-step onboarding for Fan/Brand accounts
+- Creator vs subscriber-role routing (fan/brand map to subscriber shell)
 - Creator Home after setup, with growth snapshot and studio summary
 - Live camera studio (preview, go live / end, mute, flip) from Creator Home
 - Publish flow that generates an `https://aixcam.app/creator/{slug}` preview URL
+- Suspended/restricted account status screen
 
 What is not wired yet:
 
-- Live Firebase Auth / Firestore / Storage
+- Live Firebase without adding SDK + plist locally (optional activate path is ready)
 - Real fan delivery / CDN livestream ingest (current live mode is on-device studio + simulated viewers)
 - Real AI caption generation (local string template only)
 
@@ -30,17 +35,24 @@ What is not wired yet:
 
 | File | Role |
 |------|------|
-| `Aixcam/ContentView.swift` | Auth routing and post-login roots |
+| `Aixcam/RootView.swift` | App root switch driven by `SessionManager` |
+| `Aixcam/SessionManager.swift` / `SessionRouter.swift` | Launch bootstrap + pure route mapping |
+| `Aixcam/ContentView.swift` | Welcome/auth + creator authenticated root |
 | `Aixcam/AuthViewModel.swift` | Session state; revalidates on launch |
 | `Aixcam/CreatorModels.swift` | Onboarding models |
+| `Aixcam/FirebaseBootstrap.swift` | Safe Firebase configure + auth error mapping |
+| `Aixcam/AppLockController.swift` / `UnlockView.swift` | PIN + biometric App Lock |
 | `Aixcam/CreatorBackendService.swift` | Local + Firebase-ready backend |
 | `Aixcam/SecureCredentialStore.swift` | Keychain storage for local credentials |
 | `Aixcam/CreatorSetupViewModel.swift` | Wizard state + persistence |
 | `Aixcam/CreatorOnboardingViews.swift` | 7-step setup UI |
+| `Docs/ARCHITECTURE.md` | Phase plan + routing table |
+| `Docs/FIREBASE_AUTH.md` | How to activate Firebase Auth |
 
 ## Backend docs
 
 - `FIREBASE_SCHEMA.md` — intended Firestore/Storage shape
+- `Docs/FIREBASE_AUTH.md` — Firebase Auth activate checklist
 - `firestore.rules`, `storage.rules`, `firestore.indexes.json`
 - `firebase.json` + `functions/` — deployable Cloud Function stub
 - `.GoogleService-Info.plist.example` — template only; copy to `GoogleService-Info.plist` locally

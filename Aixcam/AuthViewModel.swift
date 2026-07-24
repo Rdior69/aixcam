@@ -10,6 +10,9 @@ final class AuthViewModel: ObservableObject {
     @Published private(set) var currentUser: AppUser?
     @Published var status: AuthStatus = .idle
     @Published private(set) var isBusy = false
+    /// Welcome / signup / login surface for signed-out users. Owned here so
+    /// RootView redraws cannot wipe in-progress auth navigation.
+    @Published var unauthenticatedRoute: AuthRoute = .home
 
     private let sessionStorageKey = "aixcam.currentSession.v2"
     private let backendService: CreatorBackendServicing
@@ -26,6 +29,11 @@ final class AuthViewModel: ObservableObject {
         return currentUser.accountType == .creator && currentUser.hasPublishedCreatorProfile == false
     }
 
+    var shouldShowSubscriberOnboarding: Bool {
+        guard let currentUser else { return false }
+        return currentUser.accountType.isSubscriberRole && currentUser.hasCompletedSubscriberOnboarding == false
+    }
+
     init(
         backendService: CreatorBackendServicing = CreatorBackendFactory.makeService(),
         userDefaults: UserDefaults = .standard,
@@ -38,6 +46,21 @@ final class AuthViewModel: ObservableObject {
         if restoreSessionOnInit {
             restoreSession()
         }
+    }
+
+    func showWelcome() {
+        unauthenticatedRoute = .home
+        resetStatus()
+    }
+
+    func showSignUp() {
+        unauthenticatedRoute = .signup
+        resetStatus()
+    }
+
+    func showLogin() {
+        unauthenticatedRoute = .login
+        resetStatus()
     }
 
     func signUp(name: String, email: String, accountType: AccountType, password: String) {
@@ -55,6 +78,7 @@ final class AuthViewModel: ObservableObject {
                     )
                 )
                 applyAuthenticatedState(for: user)
+                unauthenticatedRoute = .home
                 status = .success("Welcome to Aixcam, \(user.name).")
             } catch {
                 status = .error(error.localizedDescription)
@@ -71,6 +95,7 @@ final class AuthViewModel: ObservableObject {
             do {
                 let user = try await backendService.login(email: email, password: password)
                 applyAuthenticatedState(for: user)
+                unauthenticatedRoute = .home
                 status = .success("Welcome back, \(user.name).")
             } catch {
                 status = .error(error.localizedDescription)
@@ -89,11 +114,44 @@ final class AuthViewModel: ObservableObject {
         applyAuthenticatedState(for: user)
     }
 
+    func markSubscriberOnboardingCompleted() {
+        guard var user = currentUser else { return }
+        user.hasCompletedSubscriberOnboarding = true
+        applyAuthenticatedState(for: user)
+    }
+
+    /// Applies a backend-refreshed user (e.g. after completing onboarding).
+    func applyUser(_ user: AppUser) {
+        applyAuthenticatedState(for: user)
+    }
+
     func signOut() {
+        // Clear session synchronously so welcome stays up and a restarted
+        // bootstrap/revalidate cannot resurrect the previous account mid-tap.
+        currentUser = nil
+        status = .idle
+        isBusy = false
+        unauthenticatedRoute = .home
+        userDefaults.removeObject(forKey: sessionStorageKey)
         Task {
             try? await backendService.signOut()
+        }
+    }
+
+    /// Restores a cached session then revalidates against the backend.
+    func revalidateSession() async {
+        guard let data = userDefaults.data(forKey: sessionStorageKey),
+              let record = try? decoder.decode(SessionRecord.self, from: data) else {
             currentUser = nil
-            status = .idle
+            return
+        }
+
+        currentUser = record.user
+        do {
+            let refreshed = try await backendService.refreshUser(userID: record.user.id)
+            applyAuthenticatedState(for: refreshed)
+        } catch {
+            currentUser = nil
             userDefaults.removeObject(forKey: sessionStorageKey)
         }
     }
@@ -104,21 +162,8 @@ final class AuthViewModel: ObservableObject {
     }
 
     private func restoreSession() {
-        guard let data = userDefaults.data(forKey: sessionStorageKey),
-              let record = try? decoder.decode(SessionRecord.self, from: data) else {
-            return
-        }
-
-        // Show cached user immediately, then revalidate against the backend.
-        currentUser = record.user
         Task {
-            do {
-                let refreshed = try await backendService.refreshUser(userID: record.user.id)
-                applyAuthenticatedState(for: refreshed)
-            } catch {
-                currentUser = nil
-                userDefaults.removeObject(forKey: sessionStorageKey)
-            }
+            await revalidateSession()
         }
     }
 

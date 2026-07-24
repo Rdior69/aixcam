@@ -45,7 +45,8 @@ final class CreatorSetupViewModel: ObservableObject {
     let themeColors = ThemeColorChoice.all
 
     private let backendService: CreatorBackendServicing
-    private var draftObserverTask: Task<Void, Never>?
+    /// Stored for cancellation from `deinit` (nonisolated). Safe: only assigned/cancelled, never read across threads for logic.
+    private nonisolated(unsafe) var draftObserverTask: Task<Void, Never>?
 
     init(user: AppUser, backendService: CreatorBackendServicing = CreatorBackendFactory.makeService()) {
         self.user = user
@@ -90,6 +91,7 @@ final class CreatorSetupViewModel: ObservableObject {
                     draft = CreatorOnboardingDraft(user: user)
                     try await backendService.saveCreatorDraft(userID: user.id, draft: draft)
                 }
+                currentStep = CreatorOnboardingStep(rawValue: draft.currentStepRawValue) ?? .profile
                 attachRealtimeDraftObserver()
             } catch {
                 errorMessage = error.localizedDescription
@@ -109,6 +111,8 @@ final class CreatorSetupViewModel: ObservableObject {
         withAnimation(.smooth) {
             currentStep = next
         }
+        draft.currentStepRawValue = currentStep.rawValue
+        saveProgress(message: "Progress saved.")
     }
 
     func previousStep() {
@@ -118,11 +122,14 @@ final class CreatorSetupViewModel: ObservableObject {
         withAnimation(.smooth) {
             currentStep = previous
         }
+        draft.currentStepRawValue = currentStep.rawValue
+        saveProgress()
     }
 
     func saveProgress(message: String = "Draft saved.") {
         errorMessage = ""
         isSaving = true
+        draft.currentStepRawValue = currentStep.rawValue
         Task {
             do {
                 try await backendService.saveCreatorDraft(userID: user.id, draft: draft)
@@ -292,10 +299,12 @@ final class CreatorSetupViewModel: ObservableObject {
 
     private func attachRealtimeDraftObserver() {
         draftObserverTask?.cancel()
-        draftObserverTask = Task {
-            for await remoteDraft in backendService.observeCreatorDraft(userID: user.id) {
-                if remoteDraft != draft {
-                    draft = remoteDraft
+        draftObserverTask = Task { [weak self] in
+            guard let self else { return }
+            for await remoteDraft in self.backendService.observeCreatorDraft(userID: self.user.id) {
+                guard let self else { return }
+                if remoteDraft != self.draft {
+                    self.draft = remoteDraft
                 }
             }
         }

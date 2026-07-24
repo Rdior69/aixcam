@@ -24,6 +24,28 @@
 		C3D4E5F60100000000000103 /* CreatorHomeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */; };
 		D4E5F6010000000000000101 /* LiveCameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6010000000000000201 /* LiveCameraViewModel.swift */; };
 		D4E5F6010000000000000102 /* LiveCameraStudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6010000000000000202 /* LiveCameraStudioView.swift */; };
+		E5F601000000000000000101 /* SessionRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F601000000000000000201 /* SessionRouter.swift */; };
+		E5F601000000000000000102 /* SessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F601000000000000000202 /* SessionManager.swift */; };
+		E5F601000000000000000103 /* RootSessionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F601000000000000000203 /* RootSessionViews.swift */; };
+		E5F601000000000000000104 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F601000000000000000204 /* RootView.swift */; };
+		E5F601000000000000000105 /* SessionRouterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F601000000000000000205 /* SessionRouterTests.swift */; };
+		F60100000000000000000101 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000501 /* FirebaseAuth */; };
+		F60100000000000000000102 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000502 /* FirebaseFirestore */; };
+		F60100000000000000000103 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000503 /* FirebaseStorage */; };
+		F60100000000000000000104 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000504 /* FirebaseFunctions */; };
+		F60100000000000000000105 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = F60100000000000000000505 /* FirebaseCore */; };
+		F60100000000000000000201 /* FirebaseBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60100000000000000000301 /* FirebaseBootstrap.swift */; };
+		F60100000000000000000202 /* FirebaseBootstrapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60100000000000000000302 /* FirebaseBootstrapTests.swift */; };
+		D60100000000000000000101 /* AppLockPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000201 /* AppLockPolicy.swift */; };
+		D60100000000000000000102 /* AppLockStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000202 /* AppLockStore.swift */; };
+		D60100000000000000000103 /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000203 /* BiometricAuthService.swift */; };
+		D60100000000000000000104 /* AppLockController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000204 /* AppLockController.swift */; };
+		D60100000000000000000105 /* UnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000205 /* UnlockView.swift */; };
+		D60100000000000000000106 /* AppLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D60100000000000000000206 /* AppLockTests.swift */; };
+		E60100000000000000000101 /* SubscriberModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60100000000000000000201 /* SubscriberModels.swift */; };
+		E60100000000000000000102 /* SubscriberSetupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60100000000000000000202 /* SubscriberSetupViewModel.swift */; };
+		E60100000000000000000103 /* SubscriberOnboardingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60100000000000000000203 /* SubscriberOnboardingViews.swift */; };
+		E60100000000000000000104 /* SubscriberOnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E60100000000000000000204 /* SubscriberOnboardingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +79,23 @@
 		C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatorHomeViewModelTests.swift; sourceTree = "<group>"; };
 		D4E5F6010000000000000201 /* LiveCameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCameraViewModel.swift; sourceTree = "<group>"; };
 		D4E5F6010000000000000202 /* LiveCameraStudioView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCameraStudioView.swift; sourceTree = "<group>"; };
+		E5F601000000000000000201 /* SessionRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRouter.swift; sourceTree = "<group>"; };
+		E5F601000000000000000202 /* SessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionManager.swift; sourceTree = "<group>"; };
+		E5F601000000000000000203 /* RootSessionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootSessionViews.swift; sourceTree = "<group>"; };
+		E5F601000000000000000204 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		E5F601000000000000000205 /* SessionRouterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRouterTests.swift; sourceTree = "<group>"; };
+		F60100000000000000000301 /* FirebaseBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseBootstrap.swift; sourceTree = "<group>"; };
+		F60100000000000000000302 /* FirebaseBootstrapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseBootstrapTests.swift; sourceTree = "<group>"; };
+		D60100000000000000000201 /* AppLockPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockPolicy.swift; sourceTree = "<group>"; };
+		D60100000000000000000202 /* AppLockStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockStore.swift; sourceTree = "<group>"; };
+		D60100000000000000000203 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
+		D60100000000000000000204 /* AppLockController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockController.swift; sourceTree = "<group>"; };
+		D60100000000000000000205 /* UnlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockView.swift; sourceTree = "<group>"; };
+		D60100000000000000000206 /* AppLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLockTests.swift; sourceTree = "<group>"; };
+		E60100000000000000000201 /* SubscriberModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriberModels.swift; sourceTree = "<group>"; };
+		E60100000000000000000202 /* SubscriberSetupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriberSetupViewModel.swift; sourceTree = "<group>"; };
+		E60100000000000000000203 /* SubscriberOnboardingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriberOnboardingViews.swift; sourceTree = "<group>"; };
+		E60100000000000000000204 /* SubscriberOnboardingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriberOnboardingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +103,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F60100000000000000000105 /* FirebaseCore in Frameworks */,
+				F60100000000000000000101 /* FirebaseAuth in Frameworks */,
+				F60100000000000000000102 /* FirebaseFirestore in Frameworks */,
+				F60100000000000000000103 /* FirebaseStorage in Frameworks */,
+				F60100000000000000000104 /* FirebaseFunctions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +145,19 @@
 				C3D4E5F60100000000000202 /* CreatorHomeView.swift */,
 				D4E5F6010000000000000201 /* LiveCameraViewModel.swift */,
 				D4E5F6010000000000000202 /* LiveCameraStudioView.swift */,
+				E5F601000000000000000201 /* SessionRouter.swift */,
+				E5F601000000000000000202 /* SessionManager.swift */,
+				E5F601000000000000000203 /* RootSessionViews.swift */,
+				E5F601000000000000000204 /* RootView.swift */,
+				F60100000000000000000301 /* FirebaseBootstrap.swift */,
+				D60100000000000000000201 /* AppLockPolicy.swift */,
+				D60100000000000000000202 /* AppLockStore.swift */,
+				D60100000000000000000203 /* BiometricAuthService.swift */,
+				D60100000000000000000204 /* AppLockController.swift */,
+				D60100000000000000000205 /* UnlockView.swift */,
+				E60100000000000000000201 /* SubscriberModels.swift */,
+				E60100000000000000000202 /* SubscriberSetupViewModel.swift */,
+				E60100000000000000000203 /* SubscriberOnboardingViews.swift */,
 				B2C3D4E5F601000000000201 /* PrivacyInfo.xcprivacy */,
 				A1B2C3D4E5F6010000000204 /* Assets.xcassets */,
 				A1B2C3D4E5F6010000000403 /* Preview Content */,
@@ -131,6 +188,10 @@
 				B2C3D4E5F601000000000202 /* AuthViewModelTests.swift */,
 				B2C3D4E5F601000000000205 /* LocalCreatorBackendServiceTests.swift */,
 				C3D4E5F60100000000000203 /* CreatorHomeViewModelTests.swift */,
+				E5F601000000000000000205 /* SessionRouterTests.swift */,
+				F60100000000000000000302 /* FirebaseBootstrapTests.swift */,
+				D60100000000000000000206 /* AppLockTests.swift */,
+				E60100000000000000000204 /* SubscriberOnboardingTests.swift */,
 			);
 			path = AixcamTests;
 			sourceTree = "<group>";
@@ -151,6 +212,13 @@
 			dependencies = (
 			);
 			name = Aixcam;
+			packageProductDependencies = (
+				F60100000000000000000505 /* FirebaseCore */,
+				F60100000000000000000501 /* FirebaseAuth */,
+				F60100000000000000000502 /* FirebaseFirestore */,
+				F60100000000000000000503 /* FirebaseStorage */,
+				F60100000000000000000504 /* FirebaseFunctions */,
+			);
 			productName = Aixcam;
 			productReference = A1B2C3D4E5F6010000000206 /* Aixcam.app */;
 			productType = "com.apple.product-type.application";
@@ -201,6 +269,9 @@
 				Base,
 			);
 			mainGroup = A1B2C3D4E5F6010000000401;
+			packageReferences = (
+				F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = A1B2C3D4E5F6010000000404 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -247,6 +318,19 @@
 				C3D4E5F60100000000000102 /* CreatorHomeView.swift in Sources */,
 				D4E5F6010000000000000101 /* LiveCameraViewModel.swift in Sources */,
 				D4E5F6010000000000000102 /* LiveCameraStudioView.swift in Sources */,
+				E5F601000000000000000101 /* SessionRouter.swift in Sources */,
+				E5F601000000000000000102 /* SessionManager.swift in Sources */,
+				E5F601000000000000000103 /* RootSessionViews.swift in Sources */,
+				E5F601000000000000000104 /* RootView.swift in Sources */,
+				F60100000000000000000201 /* FirebaseBootstrap.swift in Sources */,
+				D60100000000000000000101 /* AppLockPolicy.swift in Sources */,
+				D60100000000000000000102 /* AppLockStore.swift in Sources */,
+				D60100000000000000000103 /* BiometricAuthService.swift in Sources */,
+				D60100000000000000000104 /* AppLockController.swift in Sources */,
+				D60100000000000000000105 /* UnlockView.swift in Sources */,
+				E60100000000000000000101 /* SubscriberModels.swift in Sources */,
+				E60100000000000000000102 /* SubscriberSetupViewModel.swift in Sources */,
+				E60100000000000000000103 /* SubscriberOnboardingViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,6 +341,10 @@
 				B2C3D4E5F601000000000102 /* AuthViewModelTests.swift in Sources */,
 				B2C3D4E5F601000000000104 /* LocalCreatorBackendServiceTests.swift in Sources */,
 				C3D4E5F60100000000000103 /* CreatorHomeViewModelTests.swift in Sources */,
+				E5F601000000000000000105 /* SessionRouterTests.swift in Sources */,
+				F60100000000000000000202 /* FirebaseBootstrapTests.swift in Sources */,
+				D60100000000000000000106 /* AppLockTests.swift in Sources */,
+				E60100000000000000000104 /* SubscriberOnboardingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -404,6 +492,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Aixcam uses the camera so creators can livestream to fans.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Aixcam uses Face ID to unlock the app.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Aixcam uses the microphone for live creator audio.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -440,6 +529,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Aixcam uses the camera so creators can livestream to fans.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Aixcam uses Face ID to unlock the app.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Aixcam uses the microphone for live creator audio.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -539,6 +629,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F60100000000000000000501 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		F60100000000000000000502 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		F60100000000000000000503 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		F60100000000000000000504 /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
+		F60100000000000000000505 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F60100000000000000000401 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A1B2C3D4E5F6010000000701 /* Project object */;
 }
