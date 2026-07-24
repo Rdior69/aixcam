@@ -45,7 +45,8 @@ final class CreatorSetupViewModel: ObservableObject {
     let themeColors = ThemeColorChoice.all
 
     private let backendService: CreatorBackendServicing
-    private var draftObserverTask: Task<Void, Never>?
+    /// Stored for cancellation from `deinit` (nonisolated). Safe: only assigned/cancelled, never read across threads for logic.
+    private nonisolated(unsafe) var draftObserverTask: Task<Void, Never>?
 
     init(user: AppUser, backendService: CreatorBackendServicing = CreatorBackendFactory.makeService()) {
         self.user = user
@@ -298,10 +299,12 @@ final class CreatorSetupViewModel: ObservableObject {
 
     private func attachRealtimeDraftObserver() {
         draftObserverTask?.cancel()
-        draftObserverTask = Task {
-            for await remoteDraft in backendService.observeCreatorDraft(userID: user.id) {
-                if remoteDraft != draft {
-                    draft = remoteDraft
+        draftObserverTask = Task { [weak self] in
+            guard let self else { return }
+            for await remoteDraft in self.backendService.observeCreatorDraft(userID: self.user.id) {
+                guard let self else { return }
+                if remoteDraft != self.draft {
+                    self.draft = remoteDraft
                 }
             }
         }

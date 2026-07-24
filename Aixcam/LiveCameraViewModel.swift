@@ -31,13 +31,18 @@ final class LiveCameraViewModel: ObservableObject {
     let title: String
     let sessionController: LiveCameraSessionController
 
-    private var timerTask: Task<Void, Never>?
-    private var viewerTask: Task<Void, Never>?
+    private nonisolated(unsafe) var timerTask: Task<Void, Never>?
+    private nonisolated(unsafe) var viewerTask: Task<Void, Never>?
 
     init(creatorDisplayName: String) {
         title = "\(creatorDisplayName)’s live"
         sessionController = LiveCameraSessionController()
         refreshAuthorization()
+    }
+
+    deinit {
+        timerTask?.cancel()
+        viewerTask?.cancel()
     }
 
     var canGoLive: Bool {
