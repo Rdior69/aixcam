@@ -8,42 +8,63 @@ struct ContentView: View {
 
 struct UnauthenticatedRootView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
-    @State private var route: AuthRoute = .home
 
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(spacing: 28) {
-                        HeaderView(route: $route)
-                            .id("auth-top")
-
-                        switch route {
-                        case .home:
-                            LandingView(route: $route)
-                        case .signup:
-                            SignUpView(route: $route)
-                        case .login:
-                            LoginView(route: $route)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 24)
-                    .frame(maxWidth: 720)
-                    .frame(maxWidth: .infinity)
-                    .animation(.easeInOut(duration: 0.2), value: route)
+            ScrollView {
+                VStack(spacing: 28) {
+                    HeaderView()
+                    LandingView()
                 }
-                .navigationBarHidden(true)
-                .onChange(of: route) { _, _ in
-                    authViewModel.resetStatus()
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        proxy.scrollTo("auth-top", anchor: .top)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
+                .frame(maxWidth: 720)
+                .frame(maxWidth: .infinity)
+            }
+            .navigationBarHidden(true)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .fullScreenCover(item: authCoverBinding) { route in
+            NavigationStack {
+                Group {
+                    switch route {
+                    case .signup:
+                        SignUpView()
+                    case .login:
+                        LoginView()
+                    case .home:
+                        EmptyView()
+                    }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") {
+                            authViewModel.showWelcome()
+                        }
                     }
                 }
             }
         }
-        // Stable identity so parent RootView redraws don't wipe local auth routing.
-        .id("unauthenticated-root")
+    }
+
+    private var authCoverBinding: Binding<AuthRoute?> {
+        Binding(
+            get: {
+                switch authViewModel.unauthenticatedRoute {
+                case .signup, .login:
+                    return authViewModel.unauthenticatedRoute
+                case .home:
+                    return nil
+                }
+            },
+            set: { newValue in
+                if newValue == nil {
+                    authViewModel.showWelcome()
+                } else if let newValue {
+                    authViewModel.unauthenticatedRoute = newValue
+                }
+            }
+        )
     }
 }
 
@@ -54,7 +75,6 @@ struct CreatorAuthenticatedRoot: View {
 
     @State private var creatorSetupViewModel: CreatorSetupViewModel?
     @State private var showCreatorSetup = false
-    @State private var authRoute: AuthRoute = .home
 
     var body: some View {
         CreatorHomeView(
@@ -67,7 +87,6 @@ struct CreatorAuthenticatedRoot: View {
             onSignOut: {
                 showCreatorSetup = false
                 authViewModel.signOut()
-                authRoute = .home
             }
         )
         .frame(maxWidth: 760)
@@ -87,7 +106,6 @@ struct CreatorAuthenticatedRoot: View {
                         onSignOut: {
                             showCreatorSetup = false
                             authViewModel.signOut()
-                            authRoute = .home
                         }
                     )
                 } else {
@@ -134,19 +152,21 @@ struct CreatorAuthenticatedRoot: View {
     }
 }
 
-enum AuthRoute: Equatable {
+enum AuthRoute: String, Equatable, Identifiable {
     case home
     case signup
     case login
+
+    var id: String { rawValue }
 }
 
 private struct HeaderView: View {
-    @Binding var route: AuthRoute
+    @EnvironmentObject private var authViewModel: AuthViewModel
 
     var body: some View {
         HStack(spacing: 12) {
             Button {
-                route = .home
+                authViewModel.showWelcome()
             } label: {
                 HStack(spacing: 12) {
                     AixcamIconView(size: 48)
@@ -159,16 +179,12 @@ private struct HeaderView: View {
             Spacer()
 
             Button("Login") {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    route = .login
-                }
+                authViewModel.showLogin()
             }
             .buttonStyle(.bordered)
 
             Button("Sign up") {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    route = .signup
-                }
+                authViewModel.showSignUp()
             }
             .buttonStyle(.borderedProminent)
             .tint(.teal)
@@ -177,7 +193,7 @@ private struct HeaderView: View {
 }
 
 private struct LandingView: View {
-    @Binding var route: AuthRoute
+    @EnvironmentObject private var authViewModel: AuthViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 26) {
@@ -197,9 +213,7 @@ private struct LandingView: View {
 
             VStack(spacing: 12) {
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        route = .signup
-                    }
+                    authViewModel.showSignUp()
                 } label: {
                     Label("Sign up", systemImage: "person.badge.plus")
                         .frame(maxWidth: .infinity)
@@ -210,9 +224,7 @@ private struct LandingView: View {
                 .accessibilityIdentifier("landing-sign-up")
 
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        route = .login
-                    }
+                    authViewModel.showLogin()
                 } label: {
                     Label("I already have an account", systemImage: "person.crop.circle")
                         .frame(maxWidth: .infinity)
@@ -228,109 +240,118 @@ private struct LandingView: View {
 
 private struct SignUpView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
-    @Binding var route: AuthRoute
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
     @State private var accountType = AccountType.creator
 
     var body: some View {
-        AuthCard(
-            title: "Create your Aixcam account.",
-            subtitle: "Sign up to unlock creator onboarding, fan subscriptions, premium content, and AI-powered production tools."
-        ) {
-            TextField("Full name", text: $name)
-                .textContentType(.name)
-                .autocorrectionDisabled()
+        ScrollView {
+            AuthCard(
+                title: "Create your Aixcam account.",
+                subtitle: "Sign up to unlock creator onboarding, fan subscriptions, premium content, and AI-powered production tools."
+            ) {
+                TextField("Full name", text: $name)
+                    .textContentType(.name)
+                    .autocorrectionDisabled()
 
-            TextField("Email address", text: $email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+                TextField("Email address", text: $email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
 
-            Picker("Joining as", selection: $accountType) {
-                ForEach(AccountType.allCases) { type in
-                    Text(type.rawValue).tag(type)
+                Picker("Joining as", selection: $accountType) {
+                    ForEach(AccountType.allCases) { type in
+                        Text(type.rawValue).tag(type)
+                    }
                 }
-            }
 
-            SecureField("Password", text: $password)
-                .textContentType(.newPassword)
+                SecureField("Password", text: $password)
+                    .textContentType(.newPassword)
 
-            StatusBanner(status: authViewModel.status)
+                StatusBanner(status: authViewModel.status)
 
-            Button {
-                authViewModel.signUp(name: name, email: email, accountType: accountType, password: password)
-            } label: {
-                if authViewModel.isBusy {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("Create account")
-                        .frame(maxWidth: .infinity)
+                Button {
+                    authViewModel.signUp(
+                        name: name,
+                        email: email,
+                        accountType: accountType,
+                        password: password
+                    )
+                } label: {
+                    if authViewModel.isBusy {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text("Create account")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(.teal)
-            .disabled(authViewModel.isBusy)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(.teal)
+                .disabled(authViewModel.isBusy)
 
-            Button("Already signed up? Login") {
-                route = .login
+                Button("Already signed up? Login") {
+                    authViewModel.showLogin()
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.teal)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.teal)
+            .padding(20)
         }
+        .background(BackgroundCanvas().allowsHitTesting(false).ignoresSafeArea())
     }
 }
 
 private struct LoginView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
-    @Binding var route: AuthRoute
     @State private var email = ""
     @State private var password = ""
 
     var body: some View {
-        AuthCard(
-            title: "Welcome back to Aixcam.",
-            subtitle: "Log in to continue your creator setup, media workflow, fan subscriptions, and growth analytics."
-        ) {
-            TextField("Email address", text: $email)
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
+        ScrollView {
+            AuthCard(
+                title: "Welcome back to Aixcam.",
+                subtitle: "Log in to continue your creator setup, media workflow, fan subscriptions, and growth analytics."
+            ) {
+                TextField("Email address", text: $email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
 
-            SecureField("Password", text: $password)
-                .textContentType(.password)
+                SecureField("Password", text: $password)
+                    .textContentType(.password)
 
-            StatusBanner(status: authViewModel.status)
+                StatusBanner(status: authViewModel.status)
 
-            Button {
-                authViewModel.login(email: email, password: password)
-            } label: {
-                if authViewModel.isBusy {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("Log in")
-                        .frame(maxWidth: .infinity)
+                Button {
+                    authViewModel.login(email: email, password: password)
+                } label: {
+                    if authViewModel.isBusy {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text("Log in")
+                            .frame(maxWidth: .infinity)
+                    }
                 }
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(.teal)
-            .disabled(authViewModel.isBusy)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .tint(.teal)
+                .disabled(authViewModel.isBusy)
 
-            Button("New to Aixcam? Sign up") {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    route = .signup
+                Button("New to Aixcam? Sign up") {
+                    authViewModel.showSignUp()
                 }
+                .buttonStyle(.plain)
+                .foregroundStyle(.teal)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(.teal)
+            .padding(20)
         }
+        .background(BackgroundCanvas().allowsHitTesting(false).ignoresSafeArea())
     }
 }
 
