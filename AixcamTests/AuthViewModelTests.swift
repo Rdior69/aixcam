@@ -107,4 +107,31 @@ final class AuthViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.currentUser)
         XCTAssertNil(defaults.data(forKey: "aixcam.currentSession.v2"))
     }
+
+    func testShowSignUpKeepsCreateAccountRouteWithoutSession() {
+        let backend = LocalCreatorBackendService(
+            credentialStore: MemoryCredentialStore(),
+            userDefaults: UserDefaults(suiteName: "test.auth.route")!
+        )
+        let defaults = UserDefaults(suiteName: "test.auth.session.route")!
+        defaults.removePersistentDomain(forName: "test.auth.session.route")
+
+        let viewModel = AuthViewModel(
+            backendService: backend,
+            userDefaults: defaults,
+            restoreSessionOnInit: false
+        )
+
+        XCTAssertEqual(viewModel.unauthenticatedRoute, .home)
+        viewModel.showSignUp()
+        XCTAssertEqual(viewModel.unauthenticatedRoute, .signup)
+        XCTAssertNil(viewModel.currentUser)
+        XCTAssertFalse(viewModel.isAuthenticated)
+
+        viewModel.showLogin()
+        XCTAssertEqual(viewModel.unauthenticatedRoute, .login)
+
+        viewModel.showWelcome()
+        XCTAssertEqual(viewModel.unauthenticatedRoute, .home)
+    }
 }

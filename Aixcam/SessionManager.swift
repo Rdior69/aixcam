@@ -12,7 +12,7 @@ final class SessionManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var hasCompletedBootstrap = false
 
-    init(authViewModel: AuthViewModel = AuthViewModel(restoreSessionOnInit: false)) {
+    init(authViewModel: AuthViewModel) {
         self.authViewModel = authViewModel
         bindAuthChanges()
     }

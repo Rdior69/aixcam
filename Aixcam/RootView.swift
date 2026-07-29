@@ -26,8 +26,7 @@ struct RootView: View {
                     .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: sessionManager.rootRoute)
-        .animation(.easeInOut(duration: 0.2), value: appLock.isLocked)
+        // Avoid animated root swaps stealing focus from auth navigation pushes.
         .task {
             await sessionManager.bootstrap()
             if authViewModel.isAuthenticated {

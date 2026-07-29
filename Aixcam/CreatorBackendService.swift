@@ -35,6 +35,7 @@ enum CreatorBackendError: LocalizedError, Equatable {
     }
 }
 
+@MainActor
 protocol CreatorBackendServicing {
     func signUp(payload: SignUpPayload) async throws -> AppUser
     func login(email: String, password: String) async throws -> AppUser
@@ -51,6 +52,7 @@ protocol CreatorBackendServicing {
     func completeSubscriberOnboarding(userID: String, draft: SubscriberOnboardingDraft) async throws -> AppUser
 }
 
+@MainActor
 enum CreatorBackendFactory {
     static func makeService() -> CreatorBackendServicing {
         #if canImport(FirebaseAuth) && canImport(FirebaseFirestore) && canImport(FirebaseStorage) && canImport(FirebaseFunctions) && canImport(FirebaseCore)
@@ -420,6 +422,7 @@ import FirebaseFirestore
 import FirebaseFunctions
 import FirebaseStorage
 
+@MainActor
 final class FirebaseCreatorBackendService: CreatorBackendServicing {
     private let auth = Auth.auth()
     private let firestore = Firestore.firestore()

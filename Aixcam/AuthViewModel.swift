@@ -35,7 +35,7 @@ final class AuthViewModel: ObservableObject {
     }
 
     init(
-        backendService: CreatorBackendServicing = CreatorBackendFactory.makeService(),
+        backendService: CreatorBackendServicing,
         userDefaults: UserDefaults = .standard,
         restoreSessionOnInit: Bool = true
     ) {
