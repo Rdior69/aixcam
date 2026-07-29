@@ -17,7 +17,12 @@ struct CreatorHomeView: View {
         onEditSetup: @escaping () -> Void,
         onSignOut: @escaping () -> Void
     ) {
-        _viewModel = StateObject(wrappedValue: CreatorHomeViewModel(user: user))
+        _viewModel = StateObject(
+            wrappedValue: CreatorHomeViewModel(
+                user: user,
+                backendService: CreatorBackendFactory.makeService()
+            )
+        )
         self.needsSetup = needsSetup
         self.onEditSetup = onEditSetup
         self.onSignOut = onSignOut

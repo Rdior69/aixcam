@@ -14,7 +14,7 @@ final class SubscriberSetupViewModel: ObservableObject {
     let user: AppUser
     private let backendService: CreatorBackendServicing
 
-    init(user: AppUser, backendService: CreatorBackendServicing = CreatorBackendFactory.makeService()) {
+    init(user: AppUser, backendService: CreatorBackendServicing) {
         self.user = user
         self.backendService = backendService
         self.draft = SubscriberOnboardingDraft(user: user)

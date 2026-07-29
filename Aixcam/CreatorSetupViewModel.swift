@@ -48,7 +48,7 @@ final class CreatorSetupViewModel: ObservableObject {
     /// Stored for cancellation from `deinit` (nonisolated). Safe: only assigned/cancelled, never read across threads for logic.
     private nonisolated(unsafe) var draftObserverTask: Task<Void, Never>?
 
-    init(user: AppUser, backendService: CreatorBackendServicing = CreatorBackendFactory.makeService()) {
+    init(user: AppUser, backendService: CreatorBackendServicing) {
         self.user = user
         self.backendService = backendService
         self.draft = CreatorOnboardingDraft(user: user)

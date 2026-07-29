@@ -211,7 +211,10 @@ struct SubscriberAuthenticatedRoot: View {
 
     private func configureSetup(forceReload: Bool = false) {
         if forceReload || setupViewModel?.user.id != user.id {
-            setupViewModel = SubscriberSetupViewModel(user: user)
+            setupViewModel = SubscriberSetupViewModel(
+                user: user,
+                backendService: CreatorBackendFactory.makeService()
+            )
         }
     }
 }

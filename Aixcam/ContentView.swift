@@ -126,7 +126,10 @@ struct CreatorAuthenticatedRoot: View {
             return
         }
         if forceReload || creatorSetupViewModel?.user.id != user.id {
-            creatorSetupViewModel = CreatorSetupViewModel(user: user)
+            creatorSetupViewModel = CreatorSetupViewModel(
+                user: user,
+                backendService: CreatorBackendFactory.makeService()
+            )
         }
     }
 }

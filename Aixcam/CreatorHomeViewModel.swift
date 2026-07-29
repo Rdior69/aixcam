@@ -14,7 +14,7 @@ final class CreatorHomeViewModel: ObservableObject {
 
     init(
         user: AppUser,
-        backendService: CreatorBackendServicing = CreatorBackendFactory.makeService()
+        backendService: CreatorBackendServicing
     ) {
         self.user = user
         self.backendService = backendService
