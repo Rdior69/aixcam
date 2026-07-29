@@ -96,13 +96,12 @@ final class AuthViewModelTests: XCTestCase {
         let viewModel = AuthViewModel(
             backendService: backend,
             userDefaults: defaults,
-            restoreSessionOnInit: true
+            restoreSessionOnInit: false
         )
 
-        let deadline = Date().addingTimeInterval(2)
-        while viewModel.currentUser != nil && Date() < deadline {
-            await Task.yield()
-        }
+        // Await revalidation directly — a yield-loop races the Task that briefly
+        // applies the cached ghost user before refresh clears it.
+        await viewModel.revalidateSession()
 
         XCTAssertNil(viewModel.currentUser)
         XCTAssertNil(defaults.data(forKey: "aixcam.currentSession.v2"))
