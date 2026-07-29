@@ -1,6 +1,7 @@
 import XCTest
 @testable import Aixcam
 
+@MainActor
 final class FirebaseBootstrapTests: XCTestCase {
     func testFactoryDefaultsToLocalWithoutFirebasePlist() {
         // In this CI/dev tree, GoogleService-Info.plist is not bundled.
