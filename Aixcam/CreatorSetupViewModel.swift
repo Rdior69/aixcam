@@ -301,8 +301,9 @@ final class CreatorSetupViewModel: ObservableObject {
         draftObserverTask?.cancel()
         draftObserverTask = Task { [weak self] in
             guard let self else { return }
-            for await remoteDraft in self.backendService.observeCreatorDraft(userID: self.user.id) {
-                guard let self else { return }
+            let userID = self.user.id
+            for await remoteDraft in self.backendService.observeCreatorDraft(userID: userID) {
+                if Task.isCancelled { return }
                 if remoteDraft != self.draft {
                     self.draft = remoteDraft
                 }
