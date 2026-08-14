@@ -6,6 +6,25 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		28121796302A62170098D232 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 28121795302A62170098D232 /* GoogleService-Info.plist */; };
+		28BCC0D5302B44F100AF8348 /* FIREBASE_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BCC0D4302B44F100AF8348 /* FIREBASE_SETUP.md */; };
+		28BCC0D7302B4F5B00AF8348 /* fix_duplicates.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BCC0D6302B4F5B00AF8348 /* fix_duplicates.sh */; };
+		28BE0F9F302BF8B8009D851E /* DELETE_DUPLICATES.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0F9E302BF8B8009D851E /* DELETE_DUPLICATES.sh */; };
+		28BE0FA1302C003C009D851E /* CONTRIBUTING.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA0302C003C009D851E /* CONTRIBUTING.md */; };
+		28BE0FA3302C0055009D851E /* git_sync.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA2302C0055009D851E /* git_sync.sh */; };
+		28BE0FA5302C007E009D851E /* GIT_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA4302C007E009D851E /* GIT_GUIDE.md */; };
+		28BE0FA7302C00A5009D851E /* complete_sync.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA6302C00A5009D851E /* complete_sync.sh */; };
+		28BE0FA9302C00BB009D851E /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA8302C00BB009D851E /* .gitignore */; };
+		28BE0FAB302C00E4009D851E /* SETUP_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FAA302C00E4009D851E /* SETUP_COMPLETE.md */; };
+		28BE0FAD302C0100009D851E /* COMMIT_TEMPLATES.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FAC302C00FF009D851E /* COMMIT_TEMPLATES.md */; };
+		28BE0FAF302C0122009D851E /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FAE302C0122009D851E /* README.md */; };
+		28BE0FB1302C0147009D851E /* first_time_setup.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FB0302C0147009D851E /* first_time_setup.sh */; };
+		28BE0FB7302DBABA009D851E /* setup_github_token.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FB6302DBABA009D851E /* setup_github_token.sh */; };
+		28CCFB3C30136BC70095FF30 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 28CCFB3B30136BC70095FF30 /* FirebaseCore */; };
+		28CCFB3E30136BDF0095FF30 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 28CCFB3D30136BDF0095FF30 /* FirebaseAuth */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		28CA3ED52FB9A73900D4D552 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +43,23 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		2801FB4E302EE99600FBDD5D /* AIxcam.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = AIxcam.xcodeproj; sourceTree = "<group>"; };
+		28121795302A62170098D232 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		28BCC0D2302B449E00AF8348 /* AuthTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthTextField.swift; sourceTree = "<group>"; };
+		28BCC0D4302B44F100AF8348 /* FIREBASE_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FIREBASE_SETUP.md; sourceTree = "<group>"; };
+		28BCC0D6302B4F5B00AF8348 /* fix_duplicates.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = fix_duplicates.sh; sourceTree = "<group>"; };
+		28BE0F9E302BF8B8009D851E /* DELETE_DUPLICATES.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = DELETE_DUPLICATES.sh; sourceTree = "<group>"; };
+		28BE0FA0302C003C009D851E /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
+		28BE0FA2302C0055009D851E /* git_sync.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = git_sync.sh; sourceTree = "<group>"; };
+		28BE0FA4302C007E009D851E /* GIT_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GIT_GUIDE.md; sourceTree = "<group>"; };
+		28BE0FA6302C00A5009D851E /* complete_sync.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = complete_sync.sh; sourceTree = "<group>"; };
+		28BE0FA8302C00BB009D851E /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		28BE0FAA302C00E4009D851E /* SETUP_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SETUP_COMPLETE.md; sourceTree = "<group>"; };
+		28BE0FAC302C00FF009D851E /* COMMIT_TEMPLATES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = COMMIT_TEMPLATES.md; sourceTree = "<group>"; };
+		28BE0FAE302C0122009D851E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		28BE0FB0302C0147009D851E /* first_time_setup.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = first_time_setup.sh; sourceTree = "<group>"; };
+		28BE0FB6302DBABA009D851E /* setup_github_token.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = setup_github_token.sh; sourceTree = "<group>"; };
+		28BE0FB8302DFAAC009D851E /* AIxcam.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = AIxcam.xcodeproj; path = AIxcam/AIxcam.xcodeproj; sourceTree = SOURCE_ROOT; };
 		28CA3EC72FB9A73700D4D552 /* AIxcam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIxcam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		28CA3ED42FB9A73900D4D552 /* AIxcamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIxcamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		28CA3EDE2FB9A73900D4D552 /* AIxcamUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIxcamUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,6 +88,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				28CCFB3C30136BC70095FF30 /* FirebaseCore in Frameworks */,
+				28CCFB3E30136BDF0095FF30 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,13 +110,52 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		2801FB30302EE99600FBDD5D /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				28BE0FB8302DFAAC009D851E /* AIxcam.xcodeproj */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
+		2801FB53302EE99600FBDD5D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		28BE0FB9302DFAAC009D851E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		28CA3EBE2FB9A73700D4D552 = {
 			isa = PBXGroup;
 			children = (
 				28CA3EC92FB9A73700D4D552 /* AIxcam */,
 				28CA3ED72FB9A73900D4D552 /* AIxcamTests */,
 				28CA3EE12FB9A73900D4D552 /* AIxcamUITests */,
+				28CCFB3A30136BC70095FF30 /* Frameworks */,
+				28121795302A62170098D232 /* GoogleService-Info.plist */,
+				28BCC0D2302B449E00AF8348 /* AuthTextField.swift */,
+				28BCC0D4302B44F100AF8348 /* FIREBASE_SETUP.md */,
+				28BCC0D6302B4F5B00AF8348 /* fix_duplicates.sh */,
+				28BE0FA0302C003C009D851E /* CONTRIBUTING.md */,
+				28BE0F9E302BF8B8009D851E /* DELETE_DUPLICATES.sh */,
+				28BE0FA2302C0055009D851E /* git_sync.sh */,
+				28BE0FA4302C007E009D851E /* GIT_GUIDE.md */,
+				28BE0FA6302C00A5009D851E /* complete_sync.sh */,
+				28BE0FA8302C00BB009D851E /* .gitignore */,
+				28BE0FAA302C00E4009D851E /* SETUP_COMPLETE.md */,
+				28BE0FAC302C00FF009D851E /* COMMIT_TEMPLATES.md */,
+				28BE0FAE302C0122009D851E /* README.md */,
+				28BE0FB0302C0147009D851E /* first_time_setup.sh */,
+				28BE0FB6302DBABA009D851E /* setup_github_token.sh */,
 				28CA3EC82FB9A73700D4D552 /* Products */,
+				2801FB30302EE99600FBDD5D /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -90,6 +167,13 @@
 				28CA3EDE2FB9A73900D4D552 /* AIxcamUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		28CCFB3A30136BC70095FF30 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -112,6 +196,8 @@
 			);
 			name = AIxcam;
 			packageProductDependencies = (
+				28CCFB3B30136BC70095FF30 /* FirebaseCore */,
+				28CCFB3D30136BDF0095FF30 /* FirebaseAuth */,
 			);
 			productName = AIxcam;
 			productReference = 28CA3EC72FB9A73700D4D552 /* AIxcam.app */;
@@ -169,9 +255,9 @@
 		28CA3EBF2FB9A73700D4D552 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				BuildIndependentTargetsInParallel = 1;
+				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 2650;
-				LastUpgradeCheck = 2650;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					28CA3EC62FB9A73700D4D552 = {
 						CreatedOnToolsVersion = 26.5;
@@ -195,9 +281,23 @@
 			);
 			mainGroup = 28CA3EBE2FB9A73700D4D552;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				28C60B763012F5B900835A17 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				28BCC0CF302B43C900AF8348 /* XCRemoteSwiftPackageReference "swift-system" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 28CA3EC82FB9A73700D4D552 /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 28BE0FB9302DFAAC009D851E /* Products */;
+					ProjectRef = 28BE0FB8302DFAAC009D851E /* AIxcam.xcodeproj */;
+				},
+				{
+					ProductGroup = 2801FB53302EE99600FBDD5D /* Products */;
+					ProjectRef = 2801FB4E302EE99600FBDD5D /* AIxcam.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				28CA3EC62FB9A73700D4D552 /* AIxcam */,
@@ -212,6 +312,20 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				28BE0FA9302C00BB009D851E /* .gitignore in Resources */,
+				28BE0FB7302DBABA009D851E /* setup_github_token.sh in Resources */,
+				28BE0FAD302C0100009D851E /* COMMIT_TEMPLATES.md in Resources */,
+				28BE0FA7302C00A5009D851E /* complete_sync.sh in Resources */,
+				28121796302A62170098D232 /* GoogleService-Info.plist in Resources */,
+				28BE0FAF302C0122009D851E /* README.md in Resources */,
+				28BCC0D7302B4F5B00AF8348 /* fix_duplicates.sh in Resources */,
+				28BE0FAB302C00E4009D851E /* SETUP_COMPLETE.md in Resources */,
+				28BE0FA1302C003C009D851E /* CONTRIBUTING.md in Resources */,
+				28BE0FA3302C0055009D851E /* git_sync.sh in Resources */,
+				28BE0FA5302C007E009D851E /* GIT_GUIDE.md in Resources */,
+				28BE0FB1302C0147009D851E /* first_time_setup.sh in Resources */,
+				28BE0F9F302BF8B8009D851E /* DELETE_DUPLICATES.sh in Resources */,
+				28BCC0D5302B44F100AF8348 /* FIREBASE_SETUP.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,6 +442,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -385,6 +500,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -400,11 +516,18 @@
 				DEVELOPMENT_TEAM = DA94CP3ZD9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				"INFOPLIST_FILE[sdk=*]" = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
+				INFOPLIST_KEY_NSCameraUsageDescription = "AIxcam needs camera access to preview and live stream video.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AIxcam needs microphone access to capture your voice during live streams.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = "video-camera";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -432,11 +555,17 @@
 				DEVELOPMENT_TEAM = DA94CP3ZD9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
+				INFOPLIST_KEY_NSCameraUsageDescription = "AIxcam needs camera access to preview and live stream video.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AIxcam needs microphone access to capture your voice during live streams.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = "video-camera";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleDarkContent;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -578,6 +707,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		28BCC0CF302B43C900AF8348 /* XCRemoteSwiftPackageReference "swift-system" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-system.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.8.0;
+			};
+		};
+		28C60B763012F5B900835A17 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.16.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		28CCFB3B30136BC70095FF30 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28C60B763012F5B900835A17 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		28CCFB3D30136BDF0095FF30 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28C60B763012F5B900835A17 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 28CA3EBF2FB9A73700D4D552 /* Project object */;
 }

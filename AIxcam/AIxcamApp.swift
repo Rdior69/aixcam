@@ -1,17 +1,18 @@
-//
-//  AIxcamApp.swift
-//  AIxcam
-//
-//  Created by ray dior on 5/17/26.
-//
-
+import FirebaseCore
 import SwiftUI
 
 @main
 struct AIxcamApp: App {
+    @State private var appRouter: AppRouter = AppRouter()
+
+    init() {
+        FirebaseApp.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(appRouter)
         }
     }
 }
