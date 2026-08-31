@@ -22,6 +22,27 @@ final class TipOrSubscribeViewModel {
     var subscriptionProducts: [Product] { payment.subscriptionProducts }
     var isSubscribed: Bool { payment.hasActiveSubscription() }
 
+    /// True only for the subscription the buyer actually owns. `isSubscribed`
+    /// alone badged *every* tier as "Active" and left them all tappable, so a
+    /// subscriber could be sold a second, different tier.
+    func isEntitled(to product: Product) -> Bool {
+        payment.activeEntitlements.contains(product.id)
+    }
+
+    /// Nothing purchasable came back. `PaymentService.loadProducts()` swallows
+    /// its error and empties both lists, so without this the screen renders as
+    /// a blank list with no explanation.
+    var hasNoProducts: Bool {
+        tipProducts.isEmpty && subscriptionProducts.isEmpty
+    }
+
+    func reload() async {
+        state = .loading
+        await payment.loadProducts()
+        await payment.refreshEntitlements()
+        state = .ready
+    }
+
     // MARK: - Dependencies
 
     private let payment: PaymentService

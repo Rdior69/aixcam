@@ -8,6 +8,11 @@ enum PaymentError: LocalizedError {
     case purchasePending
     case userCancelled
     case failedVerification
+    /// The buyer→creator mapping could not be recorded, so the purchase was not
+    /// attempted. Charging here would take the money with no way to credit the
+    /// creator — see `PaymentService.purchase(_:creatorID:)`.
+    case attributionFailed
+    case missingCreator
     case unknown(Error)
 
     var errorDescription: String? {
@@ -20,6 +25,10 @@ enum PaymentError: LocalizedError {
             return String(localized: "Purchase cancelled.")
         case .failedVerification:
             return String(localized: "We couldn’t verify this purchase with the App Store.")
+        case .attributionFailed:
+            return String(localized: "We couldn’t link this payment to the creator, so nothing was charged. Please try again.")
+        case .missingCreator:
+            return String(localized: "This payment isn’t linked to a creator, so nothing was charged.")
         case .unknown(let error):
             return error.localizedDescription
         }
@@ -68,7 +77,12 @@ final class PaymentService {
 
     // MARK: - Private
 
-    private var updatesTask: Task<Void, Never>?
+    @ObservationIgnored
+    // nonisolated(unsafe) so deinit can cancel this without MainActor
+    // .assumeIsolated, which would crash if deinit ran off the main thread.
+    // Safe because the task is written once in init and read once in deinit,
+    // with no concurrent access. Mirrors AppRouter's auth listener handle.
+    nonisolated(unsafe) private var updatesTask: Task<Void, Never>?
 
     // MARK: - Lifecycle
 
@@ -111,8 +125,18 @@ final class PaymentService {
     /// credit the right creator when it verifies the resulting transaction.
     func purchase(_ product: Product, creatorID: String? = nil) async throws -> PurchaseOutcome {
         let token = UUID()
+
+        // Attribution must succeed BEFORE the charge. This used to be a
+        // fire-and-forget call whose failures were swallowed, which meant a
+        // rules rejection or a dropped connection produced a completed payment
+        // with no buyer→creator mapping: the money was taken and the creator
+        // could never be credited, with nothing for the ledger to reconcile
+        // against. Failing here costs the buyer a retry; failing silently cost
+        // the creator their tip.
         if let creatorID {
-            await registerAttribution(token: token, creatorID: creatorID)
+            let trimmed = creatorID.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { throw PaymentError.missingCreator }
+            try await registerAttribution(token: token, creatorID: trimmed)
         }
 
         let options: Set<Product.PurchaseOption> = [.appAccountToken(token)]
@@ -238,13 +262,18 @@ final class PaymentService {
     /// The document id is the lowercased token because Apple normalizes
     /// `appAccountToken` to lowercase in the signed transaction payload, and the
     /// backend looks the mapping up by that value.
-    private func registerAttribution(token: UUID, creatorID: String) async {
+    /// Throws rather than returning: the caller must not charge if this fails.
+    private func registerAttribution(token: UUID, creatorID: String) async throws {
         guard let user = Auth.auth().currentUser,
-              let idToken = try? await user.getIDToken() else { return }
+              let idToken = try? await user.getIDToken() else {
+            throw PaymentError.attributionFailed
+        }
 
         let documentID = token.uuidString.lowercased()
         let base = "https://firestore.googleapis.com/v1/projects/aixcam/databases/(default)/documents"
-        guard let url = URL(string: "\(base)/attributions?documentId=\(documentID)") else { return }
+        guard let url = URL(string: "\(base)/attributions?documentId=\(documentID)") else {
+            throw PaymentError.attributionFailed
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -258,9 +287,28 @@ final class PaymentService {
                 "buyerUid": ["stringValue": user.uid]
             ]
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
+            throw PaymentError.attributionFailed
+        }
+        request.httpBody = httpBody
 
-        _ = try? await URLSession.shared.data(for: request)
+        // URLSession does not throw on 4xx/5xx, so the status has to be checked
+        // explicitly — a rules rejection would otherwise read as success.
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse,
+                  (200..<300).contains(http.statusCode) else {
+                throw PaymentError.attributionFailed
+            }
+        } catch let error as PaymentError {
+            throw error
+        } catch {
+            throw PaymentError.attributionFailed
+        }
+    }
+
+    deinit {
+        updatesTask?.cancel()
     }
 
     /// Unwrap a `VerificationResult`, throwing on a failed StoreKit signature check.

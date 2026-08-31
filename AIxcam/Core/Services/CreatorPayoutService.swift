@@ -28,6 +28,17 @@ struct ConnectedAccount: Codable, Sendable {
     let accountID: String          // Stripe "acct_..."
     let payoutsEnabled: Bool
     let detailsSubmitted: Bool
+
+    // `accountID` needs an explicit key. The decoder uses
+    // .convertFromSnakeCase, which turns the backend's `account_id` into
+    // `accountId` — that does not match the synthesized `accountID` key, so
+    // every decode failed with .decodingFailed. The other properties happen to
+    // round-trip correctly, which is why this was easy to miss.
+    enum CodingKeys: String, CodingKey {
+        case accountID = "accountId"
+        case payoutsEnabled
+        case detailsSubmitted
+    }
 }
 
 /// A single-use onboarding link the app opens in a browser / ASWebAuthenticationSession.
@@ -123,11 +134,19 @@ final class CreatorPayoutService: CreatorPayoutServicing {
         return try await send(request)
     }
 
+    /// Joins a relative path onto the base URL.
+    ///
+    /// Deliberately not `URL(string:relativeTo:)`: RFC 3986 relative resolution
+    /// replaces the last path segment, so a base of `https://api.example.com/v1`
+    /// with path `connect/accounts` resolves to
+    /// `https://api.example.com/connect/accounts` and silently drops `/v1`.
+    /// Appending is what callers actually mean here.
+    static func endpointURL(base: URL, path: String) -> URL {
+        base.appending(path: path)
+    }
+
     private func makeRequest(path: String, method: String) throws -> URLRequest {
-        guard let url = URL(string: path, relativeTo: baseURL) else {
-            throw PayoutError.invalidURL
-        }
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: Self.endpointURL(base: baseURL, path: path))
         request.httpMethod = method
         return request
     }

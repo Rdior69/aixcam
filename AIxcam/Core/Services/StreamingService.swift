@@ -1,6 +1,9 @@
 import Foundation
 
-struct BroadcastSession: Sendable {
+// Nonisolated so these immutable results can be inspected from any actor. The
+// app target defaults to main-actor isolation, which would otherwise confine
+// their stored properties to the main actor even though the values are Sendable.
+nonisolated struct BroadcastSession: Sendable {
     let streamID: String
     let startedAt: Date
 }
@@ -11,7 +14,7 @@ enum TransportSecurityLevel: String, Sendable {
     case degraded = "DEGRADED"
 }
 
-struct StreamingInfrastructureStatus: Sendable {
+nonisolated struct StreamingInfrastructureStatus: Sendable {
     let isReady: Bool
     let securityLevel: TransportSecurityLevel
     let description: String

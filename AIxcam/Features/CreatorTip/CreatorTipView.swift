@@ -16,7 +16,11 @@ struct CreatorTipView: View {
                     ProgressView("Loading…")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 default:
-                    content
+                    if viewModel.hasNoProducts {
+                        unavailableState
+                    } else {
+                        content
+                    }
                 }
             }
             .navigationTitle("Support This Creator")
@@ -66,12 +70,27 @@ struct CreatorTipView: View {
         }
     }
 
+    /// Shown when the store returned nothing, so the screen explains itself and
+    /// offers a way out instead of presenting an empty list.
+    private var unavailableState: some View {
+        ContentUnavailableView {
+            Label("Support unavailable", systemImage: "creditcard.trianglebadge.exclamationmark")
+        } description: {
+            Text("We couldn’t load tips or subscriptions right now. Check your connection and try again.")
+        } actions: {
+            Button("Try Again") {
+                Task { await viewModel.reload() }
+            }
+            .buttonStyle(.borderedProminent)
+        }
+    }
+
     private var subscriptionSection: some View {
         Section {
             ForEach(viewModel.subscriptionProducts, id: \.id) { product in
                 purchaseRow(
                     product,
-                    badge: viewModel.isSubscribed ? "Active" : nil
+                    badge: viewModel.isEntitled(to: product) ? "Active" : nil
                 )
             }
         } header: {
@@ -90,6 +109,8 @@ struct CreatorTipView: View {
             if case .purchasing = viewModel.state { return true }
             return false
         }()
+        // Already owned: showing an enabled row invites buying it twice.
+        let isOwned = badge != nil
 
         Button {
             Task { await viewModel.buy(product) }
@@ -118,6 +139,6 @@ struct CreatorTipView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(isAnyPurchasing)
+        .disabled(isAnyPurchasing || isOwned)
     }
 }
