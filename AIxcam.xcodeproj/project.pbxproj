@@ -8,19 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		28121796302A62170098D232 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 28121795302A62170098D232 /* GoogleService-Info.plist */; };
-		28BCC0D5302B44F100AF8348 /* FIREBASE_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BCC0D4302B44F100AF8348 /* FIREBASE_SETUP.md */; };
-		28BCC0D7302B4F5B00AF8348 /* fix_duplicates.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BCC0D6302B4F5B00AF8348 /* fix_duplicates.sh */; };
-		28BE0F9F302BF8B8009D851E /* DELETE_DUPLICATES.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0F9E302BF8B8009D851E /* DELETE_DUPLICATES.sh */; };
-		28BE0FA1302C003C009D851E /* CONTRIBUTING.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA0302C003C009D851E /* CONTRIBUTING.md */; };
-		28BE0FA3302C0055009D851E /* git_sync.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA2302C0055009D851E /* git_sync.sh */; };
-		28BE0FA5302C007E009D851E /* GIT_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA4302C007E009D851E /* GIT_GUIDE.md */; };
-		28BE0FA7302C00A5009D851E /* complete_sync.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA6302C00A5009D851E /* complete_sync.sh */; };
-		28BE0FA9302C00BB009D851E /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FA8302C00BB009D851E /* .gitignore */; };
-		28BE0FAB302C00E4009D851E /* SETUP_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FAA302C00E4009D851E /* SETUP_COMPLETE.md */; };
-		28BE0FAD302C0100009D851E /* COMMIT_TEMPLATES.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FAC302C00FF009D851E /* COMMIT_TEMPLATES.md */; };
-		28BE0FAF302C0122009D851E /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FAE302C0122009D851E /* README.md */; };
-		28BE0FB1302C0147009D851E /* first_time_setup.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FB0302C0147009D851E /* first_time_setup.sh */; };
-		28BE0FB7302DBABA009D851E /* setup_github_token.sh in Resources */ = {isa = PBXBuildFile; fileRef = 28BE0FB6302DBABA009D851E /* setup_github_token.sh */; };
+		287A74ED30369F1000976E13 /* HaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 287A74EC30369F1000976E13 /* HaishinKit */; };
+		287A74EF3036A2AE00976E13 /* RTMPHaishinKit in Frameworks */ = {isa = PBXBuildFile; productRef = 287A74EE3036A2AE00976E13 /* RTMPHaishinKit */; };
 		28CCFB3C30136BC70095FF30 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 28CCFB3B30136BC70095FF30 /* FirebaseCore */; };
 		28CCFB3E30136BDF0095FF30 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 28CCFB3D30136BDF0095FF30 /* FirebaseAuth */; };
 /* End PBXBuildFile section */
@@ -43,23 +32,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2801FB4E302EE99600FBDD5D /* AIxcam.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = AIxcam.xcodeproj; sourceTree = "<group>"; };
 		28121795302A62170098D232 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		28BCC0D2302B449E00AF8348 /* AuthTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthTextField.swift; sourceTree = "<group>"; };
-		28BCC0D4302B44F100AF8348 /* FIREBASE_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FIREBASE_SETUP.md; sourceTree = "<group>"; };
-		28BCC0D6302B4F5B00AF8348 /* fix_duplicates.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = fix_duplicates.sh; sourceTree = "<group>"; };
-		28BE0F9E302BF8B8009D851E /* DELETE_DUPLICATES.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = DELETE_DUPLICATES.sh; sourceTree = "<group>"; };
-		28BE0FA0302C003C009D851E /* CONTRIBUTING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CONTRIBUTING.md; sourceTree = "<group>"; };
-		28BE0FA2302C0055009D851E /* git_sync.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = git_sync.sh; sourceTree = "<group>"; };
-		28BE0FA4302C007E009D851E /* GIT_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GIT_GUIDE.md; sourceTree = "<group>"; };
-		28BE0FA6302C00A5009D851E /* complete_sync.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = complete_sync.sh; sourceTree = "<group>"; };
-		28BE0FA8302C00BB009D851E /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
-		28BE0FAA302C00E4009D851E /* SETUP_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SETUP_COMPLETE.md; sourceTree = "<group>"; };
-		28BE0FAC302C00FF009D851E /* COMMIT_TEMPLATES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = COMMIT_TEMPLATES.md; sourceTree = "<group>"; };
-		28BE0FAE302C0122009D851E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		28BE0FB0302C0147009D851E /* first_time_setup.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = first_time_setup.sh; sourceTree = "<group>"; };
-		28BE0FB6302DBABA009D851E /* setup_github_token.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = setup_github_token.sh; sourceTree = "<group>"; };
-		28BE0FB8302DFAAC009D851E /* AIxcam.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = AIxcam.xcodeproj; path = AIxcam/AIxcam.xcodeproj; sourceTree = SOURCE_ROOT; };
 		28CA3EC72FB9A73700D4D552 /* AIxcam.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AIxcam.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		28CA3ED42FB9A73900D4D552 /* AIxcamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIxcamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		28CA3EDE2FB9A73900D4D552 /* AIxcamUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AIxcamUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -78,6 +51,9 @@
 		};
 		28CA3EE12FB9A73900D4D552 /* AIxcamUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			explicitFileTypes = {
+				TestCredentials.plist.template = text.rtf;
+			};
 			path = AIxcamUITests;
 			sourceTree = "<group>";
 		};
@@ -89,6 +65,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				28CCFB3C30136BC70095FF30 /* FirebaseCore in Frameworks */,
+				287A74EF3036A2AE00976E13 /* RTMPHaishinKit in Frameworks */,
+				287A74ED30369F1000976E13 /* HaishinKit in Frameworks */,
 				28CCFB3E30136BDF0095FF30 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -110,28 +88,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		2801FB30302EE99600FBDD5D /* Recovered References */ = {
-			isa = PBXGroup;
-			children = (
-				28BE0FB8302DFAAC009D851E /* AIxcam.xcodeproj */,
-			);
-			name = "Recovered References";
-			sourceTree = "<group>";
-		};
-		2801FB53302EE99600FBDD5D /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		28BE0FB9302DFAAC009D851E /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		28CA3EBE2FB9A73700D4D552 = {
 			isa = PBXGroup;
 			children = (
@@ -140,22 +96,7 @@
 				28CA3EE12FB9A73900D4D552 /* AIxcamUITests */,
 				28CCFB3A30136BC70095FF30 /* Frameworks */,
 				28121795302A62170098D232 /* GoogleService-Info.plist */,
-				28BCC0D2302B449E00AF8348 /* AuthTextField.swift */,
-				28BCC0D4302B44F100AF8348 /* FIREBASE_SETUP.md */,
-				28BCC0D6302B4F5B00AF8348 /* fix_duplicates.sh */,
-				28BE0FA0302C003C009D851E /* CONTRIBUTING.md */,
-				28BE0F9E302BF8B8009D851E /* DELETE_DUPLICATES.sh */,
-				28BE0FA2302C0055009D851E /* git_sync.sh */,
-				28BE0FA4302C007E009D851E /* GIT_GUIDE.md */,
-				28BE0FA6302C00A5009D851E /* complete_sync.sh */,
-				28BE0FA8302C00BB009D851E /* .gitignore */,
-				28BE0FAA302C00E4009D851E /* SETUP_COMPLETE.md */,
-				28BE0FAC302C00FF009D851E /* COMMIT_TEMPLATES.md */,
-				28BE0FAE302C0122009D851E /* README.md */,
-				28BE0FB0302C0147009D851E /* first_time_setup.sh */,
-				28BE0FB6302DBABA009D851E /* setup_github_token.sh */,
 				28CA3EC82FB9A73700D4D552 /* Products */,
-				2801FB30302EE99600FBDD5D /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -198,6 +139,8 @@
 			packageProductDependencies = (
 				28CCFB3B30136BC70095FF30 /* FirebaseCore */,
 				28CCFB3D30136BDF0095FF30 /* FirebaseAuth */,
+				287A74EC30369F1000976E13 /* HaishinKit */,
+				287A74EE3036A2AE00976E13 /* RTMPHaishinKit */,
 			);
 			productName = AIxcam;
 			productReference = 28CA3EC72FB9A73700D4D552 /* AIxcam.app */;
@@ -284,20 +227,11 @@
 			packageReferences = (
 				28C60B763012F5B900835A17 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				28BCC0CF302B43C900AF8348 /* XCRemoteSwiftPackageReference "swift-system" */,
+				287A74EB30369F1000976E13 /* XCRemoteSwiftPackageReference "HaishinKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 28CA3EC82FB9A73700D4D552 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = 28BE0FB9302DFAAC009D851E /* Products */;
-					ProjectRef = 28BE0FB8302DFAAC009D851E /* AIxcam.xcodeproj */;
-				},
-				{
-					ProductGroup = 2801FB53302EE99600FBDD5D /* Products */;
-					ProjectRef = 2801FB4E302EE99600FBDD5D /* AIxcam.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				28CA3EC62FB9A73700D4D552 /* AIxcam */,
@@ -312,20 +246,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				28BE0FA9302C00BB009D851E /* .gitignore in Resources */,
-				28BE0FB7302DBABA009D851E /* setup_github_token.sh in Resources */,
-				28BE0FAD302C0100009D851E /* COMMIT_TEMPLATES.md in Resources */,
-				28BE0FA7302C00A5009D851E /* complete_sync.sh in Resources */,
 				28121796302A62170098D232 /* GoogleService-Info.plist in Resources */,
-				28BE0FAF302C0122009D851E /* README.md in Resources */,
-				28BCC0D7302B4F5B00AF8348 /* fix_duplicates.sh in Resources */,
-				28BE0FAB302C00E4009D851E /* SETUP_COMPLETE.md in Resources */,
-				28BE0FA1302C003C009D851E /* CONTRIBUTING.md in Resources */,
-				28BE0FA3302C0055009D851E /* git_sync.sh in Resources */,
-				28BE0FA5302C007E009D851E /* GIT_GUIDE.md in Resources */,
-				28BE0FB1302C0147009D851E /* first_time_setup.sh in Resources */,
-				28BE0F9F302BF8B8009D851E /* DELETE_DUPLICATES.sh in Resources */,
-				28BCC0D5302B44F100AF8348 /* FIREBASE_SETUP.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -436,11 +357,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -495,10 +416,11 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -517,6 +439,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_FILE[sdk=*]" = "";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				INFOPLIST_KEY_NSCameraUsageDescription = "AIxcam needs camera access to preview and live stream video.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AIxcam needs microphone access to capture your voice during live streams.";
@@ -555,6 +478,7 @@
 				DEVELOPMENT_TEAM = DA94CP3ZD9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				INFOPLIST_KEY_NSCameraUsageDescription = "AIxcam needs camera access to preview and live stream video.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AIxcam needs microphone access to capture your voice during live streams.";
@@ -709,6 +633,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		287A74EB30369F1000976E13 /* XCRemoteSwiftPackageReference "HaishinKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/shogo4405/HaishinKit.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.2.5;
+			};
+		};
 		28BCC0CF302B43C900AF8348 /* XCRemoteSwiftPackageReference "swift-system" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-system.git";
@@ -728,6 +660,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		287A74EC30369F1000976E13 /* HaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 287A74EB30369F1000976E13 /* XCRemoteSwiftPackageReference "HaishinKit" */;
+			productName = HaishinKit;
+		};
+		287A74EE3036A2AE00976E13 /* RTMPHaishinKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 287A74EB30369F1000976E13 /* XCRemoteSwiftPackageReference "HaishinKit" */;
+			productName = RTMPHaishinKit;
+		};
 		28CCFB3B30136BC70095FF30 /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 28C60B763012F5B900835A17 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

@@ -24,7 +24,7 @@ echo ""
 echo "Required token scopes:"
 echo "  - repo (all)"
 echo "  - workflow"
-e                                                                         cho "  - write:packages"
+echo "  - write:packages"
 echo "  - read:packages"
 echo ""
 

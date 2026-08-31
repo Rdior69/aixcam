@@ -158,9 +158,18 @@ temp/
 # Firebase credentials — never commit
 GoogleService-Info.plist
 
+# IVS credentials — never commit the real file, only the .template is tracked
+Secrets.plist
+
+# UI test account credentials — never commit the real file, only the .template is tracked
+TestCredentials.plist
+
 # Don't track SwiftUI previews cache
 .swiftpm/
 .swiftpm/xcode/
 
 # Instruments
 *.trace
+
+# Local cleanup backup (not for VCS)
+_cleanup_backup_*/
