@@ -14,8 +14,21 @@ struct SignUpView: View {
         !confirmPassword.isEmpty && password != confirmPassword
     }
 
+    private var emailLooksInvalid: Bool {
+        !email.isEmpty && !AuthValidation.isValidEmail(email)
+    }
+
+    private var passwordStrength: AuthValidation.PasswordStrength {
+        AuthValidation.strength(of: password)
+    }
+
+    /// Validated locally so people get a specific message before the round trip
+    /// instead of Firebase's generic error string.
     private var canSubmit: Bool {
-        !email.isEmpty && !password.isEmpty && password == confirmPassword && !isLoading
+        AuthValidation.isValidEmail(email)
+        && AuthValidation.isAcceptablePassword(password)
+        && password == confirmPassword
+        && !isLoading
     }
 
     var body: some View {
@@ -37,6 +50,12 @@ struct SignUpView: View {
                             keyboardType: .emailAddress,
                             isSecure: false
                         )
+                        .textContentType(.emailAddress)
+                        .accessibilityLabel("Email address")
+
+                        if emailLooksInvalid {
+                            fieldHint("That doesn't look like a valid email address.", isError: true)
+                        }
 
                         AuthTextField(
                             placeholder: "Password",
@@ -44,6 +63,12 @@ struct SignUpView: View {
                             keyboardType: .default,
                             isSecure: true
                         )
+                        .textContentType(.newPassword)
+                        .accessibilityLabel("Password")
+
+                        if !password.isEmpty {
+                            passwordStrengthMeter
+                        }
 
                         AuthTextField(
                             placeholder: "Confirm Password",
@@ -51,12 +76,19 @@ struct SignUpView: View {
                             keyboardType: .default,
                             isSecure: true
                         )
+                        .textContentType(.newPassword)
+                        .accessibilityLabel("Confirm password")
                         .overlay(alignment: .trailing) {
                             if passwordMismatch {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundStyle(.red.opacity(0.8))
                                     .padding(.trailing, 16)
+                                    .accessibilityLabel("Passwords do not match")
                             }
+                        }
+
+                        if passwordMismatch {
+                            fieldHint("Passwords don't match.", isError: true)
                         }
                     }
 
@@ -92,7 +124,7 @@ struct SignUpView: View {
 
                 Spacer()
 
-                Text("By creating an account you agree to our Terms & Privacy Policy.")
+                Text("AIxcam is for adults \(ViewerProfile.minimumAge)+. By creating an account you confirm you are of age and agree to our Terms & Privacy Policy.")
                     .font(.caption2)
                     .foregroundStyle(.white.opacity(0.3))
                     .multilineTextAlignment(.center)
@@ -111,6 +143,7 @@ struct SignUpView: View {
                     .frame(width: 44, height: 44)
                     .background(Color.white.opacity(0.1), in: Circle())
             }
+            .accessibilityLabel("Back")
             .padding(.top, 56)
             .padding(.leading, 20)
         }
@@ -122,10 +155,53 @@ struct SignUpView: View {
                 .font(.largeTitle.weight(.bold))
                 .foregroundStyle(.white)
 
-            Text("Start streaming to your audience.")
+            Text("Watch live, or go live yourself.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.55))
         }
+    }
+
+    /// Strength is advisory — anything past the length floor can be submitted.
+    /// See `AuthValidation.isAcceptablePassword`.
+    private var passwordStrengthMeter: some View {
+        let strength = passwordStrength
+        let colour: Color = switch strength {
+        case .tooShort: .red.opacity(0.8)
+        case .weak:     .orange
+        case .fair:     .yellow
+        case .strong:   .green
+        }
+
+        return VStack(alignment: .leading, spacing: 6) {
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.white.opacity(0.1))
+                    Capsule()
+                        .fill(colour)
+                        .frame(width: geometry.size.width * strength.fill)
+                }
+            }
+            .frame(height: 4)
+            .animation(.easeOut(duration: 0.2), value: strength)
+
+            Text(strength == .tooShort
+                 ? "At least \(AuthValidation.minimumPasswordLength) characters."
+                 : "Password strength: \(strength.label)")
+                .font(.caption2)
+                .foregroundStyle(colour.opacity(0.9))
+        }
+        .padding(.horizontal, 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Password strength: \(strength.label)")
+    }
+
+    private func fieldHint(_ text: String, isError: Bool) -> some View {
+        Text(text)
+            .font(.caption2)
+            .foregroundStyle(isError ? .red.opacity(0.85) : .white.opacity(0.4))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 4)
     }
 
     private var atmosphereBlurs: some View {

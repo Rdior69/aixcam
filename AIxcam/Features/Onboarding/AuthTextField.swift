@@ -10,6 +10,7 @@ struct AuthTextField: View {
         Group {
             if isSecure {
                 SecureField(placeholder, text: $text)
+                    .keyboardType(keyboardType)
             } else {
                 TextField(placeholder, text: $text)
                     .keyboardType(keyboardType)

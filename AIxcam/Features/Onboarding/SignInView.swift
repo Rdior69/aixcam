@@ -28,6 +28,8 @@ struct SignInView: View {
                             keyboardType: .emailAddress,
                             isSecure: false
                         )
+                        .textContentType(.emailAddress)
+                        .accessibilityLabel("Email address")
 
                         AuthTextField(
                             placeholder: "Password",
@@ -35,6 +37,18 @@ struct SignInView: View {
                             keyboardType: .default,
                             isSecure: true
                         )
+                        .textContentType(.password)
+                        .accessibilityLabel("Password")
+
+                        NavigationLink {
+                            ForgotPasswordView(email: email)
+                        } label: {
+                            Text("Forgot password?")
+                                .font(.footnote.weight(.medium))
+                                .foregroundStyle(.cyan.opacity(0.85))
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
+                        .padding(.top, 2)
                     }
 
                     if let errorMessage {
@@ -81,6 +95,7 @@ struct SignInView: View {
                     .frame(width: 44, height: 44)
                     .background(Color.white.opacity(0.1), in: Circle())
             }
+            .accessibilityLabel("Back")
             .padding(.top, 56)
             .padding(.leading, 20)
         }
@@ -92,7 +107,7 @@ struct SignInView: View {
                 .font(.largeTitle.weight(.bold))
                 .foregroundStyle(.white)
 
-            Text("Sign in to your creator account.")
+            Text("Sign in to your AIxcam account.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.55))
         }
