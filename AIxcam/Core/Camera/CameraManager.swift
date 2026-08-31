@@ -1,305 +1,258 @@
 import AVFoundation
-import Foundation
+import HaishinKit
 import Observation
 
-@Observable
-final class CameraManager {
-    enum CameraPosition {
-        case front
-        case back
+// Defined outside CameraManager so Equatable synthesis is not actor-isolated.
+enum CameraPosition: Equatable {
+    case front
+    case back
 
-        var avPosition: AVCaptureDevice.Position {
-            switch self {
-            case .front:
-                return .front
-            case .back:
-                return .back
-            }
-        }
-
-        mutating func toggle() {
-            self = self == .front ? .back : .front
-        }
+    var avPosition: AVCaptureDevice.Position {
+        self == .front ? .front : .back
     }
+
+    mutating func toggle() {
+        self = self == .front ? .back : .front
+    }
+
+    var captureDevice: AVCaptureDevice? {
+        AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: avPosition)
+    }
+}
+
+/// Manages camera capture, encoding, and RTMP publishing via HaishinKit 2.x.
+///
+/// Architecture: MediaMixer owns the AVCaptureSession and routes frames to
+/// both the MTHKView preview and the RTMPStream for publishing.
+/// SessionBuilderFactory creates sessions; RTMPSessionFactory must be registered
+/// at app startup (see AIxcamApp.init).
+@Observable
+@MainActor
+final class CameraManager {
+
+    // MARK: — Observable state
 
     private(set) var isSessionRunning = false
     private(set) var isMuted = false
-    private(set) var currentPosition: CameraPosition = .front
+    private(set) var currentPosition: CameraPosition = .back
     private(set) var zoomFactor: CGFloat = 1.0
-    private(set) var maxZoomFactor: CGFloat = 1.0
+    private(set) var maxZoomFactor: CGFloat = 1.01
+    private(set) var isPublishing = false
     private(set) var errorMessage: String?
 
-    @ObservationIgnored let session = AVCaptureSession()
+    // MARK: — HaishinKit 2.x
 
-    @ObservationIgnored private let sessionQueue = DispatchQueue(label: "com.aixcam.camera.session", qos: .userInitiated)
-    @ObservationIgnored private var videoInput: AVCaptureDeviceInput?
-    @ObservationIgnored private var audioInput: AVCaptureDeviceInput?
-    @ObservationIgnored private var isConfigured = false
+    @ObservationIgnored let mixer = MediaMixer()
+    @ObservationIgnored private var session: (any Session)?
+    @ObservationIgnored private var previewOutput: (any MediaMixerOutput)?
+    @ObservationIgnored private var isMixerReady = false
 
-    func clearError() {
-        errorMessage = nil
-    }
+    // MARK: — Init
 
-    func configureIfNeeded() {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
+    init() {}
 
-            do {
-                try self.configureSessionIfNeededOnQueue(preferredPosition: .front)
-            } catch {
-                Task { @MainActor in
-                    self.errorMessage = error.localizedDescription
-                }
-            }
-        }
-    }
+    // MARK: — Session lifecycle
 
     func startSession() {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
+        Task { await startSessionAsync() }
+    }
 
-            do {
-                try self.configureSessionIfNeededOnQueue(preferredPosition: .front)
-            } catch {
-                Task { @MainActor in
-                    self.errorMessage = error.localizedDescription
-                }
-                return
-            }
+    private func startSessionAsync() async {
+        // W-5: Configure AVAudioSession for live broadcast before attaching audio.
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, mode: .videoRecording,
+                                         options: [.allowBluetoothHFP, .defaultToSpeaker])
+            try audioSession.setActive(true)
+        } catch {
+            errorMessage = "Audio session setup failed: \(error.localizedDescription)"
+        }
 
-            guard !self.session.isRunning else { return }
-
-            self.session.startRunning()
-            Task { @MainActor in
-                self.isSessionRunning = true
-            }
+        guard let camera = currentPosition.captureDevice else {
+            errorMessage = "Camera unavailable on this device."
+            return
+        }
+        do {
+            try await mixer.attachVideo(camera)
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+        try? await mixer.attachAudio(AVCaptureDevice.default(for: .audio))
+        await mixer.startRunning()
+        isSessionRunning = true
+        isMuted = false
+        zoomFactor = 1.0
+        updateMaxZoom(for: camera)
+        isMixerReady = true
+        if let previewOutput {
+            await mixer.addOutput(previewOutput)
         }
     }
 
     func stopSession() {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-            guard self.session.isRunning else { return }
-
-            self.session.stopRunning()
-            Task { @MainActor in
-                self.isSessionRunning = false
-            }
-        }
+        Task { await stopSessionAsync() }
     }
 
+    private func stopSessionAsync() async {
+        await mixer.stopRunning()
+        try? await mixer.attachVideo(nil)
+        try? await mixer.attachAudio(nil)
+        isSessionRunning = false
+        isMixerReady = false
+    }
+
+    // MARK: — Camera controls
+
     func flipCamera() {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-
+        currentPosition.toggle()
+        guard let device = currentPosition.captureDevice else {
+            currentPosition.toggle()
+            errorMessage = "Camera unavailable for that position."
+            return
+        }
+        Task {
             do {
-                try self.configureSessionIfNeededOnQueue(preferredPosition: .front)
+                try await mixer.attachVideo(device)
             } catch {
-                Task { @MainActor in
-                    self.errorMessage = error.localizedDescription
-                }
-                return
-            }
-
-            let current = self.videoInput?.device.position == .back ? CameraPosition.back : CameraPosition.front
-            var nextPosition = current
-            nextPosition.toggle()
-
-            self.session.beginConfiguration()
-            do {
-                try self.configureVideoInput(position: nextPosition)
-                self.session.commitConfiguration()
-
-                let updatedPosition = nextPosition
-                Task { @MainActor in
-                    self.currentPosition = updatedPosition
-                }
-            } catch {
-                self.session.commitConfiguration()
-                Task { @MainActor in
-                    self.errorMessage = error.localizedDescription
-                }
+                currentPosition.toggle()
+                errorMessage = error.localizedDescription
             }
         }
+        zoomFactor = 1.0
+        updateMaxZoom(for: device)
     }
 
     func toggleMute() {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-
-            let shouldMute = self.audioInput != nil
-
-            if shouldMute {
-                if let audioInput = self.audioInput {
-                    self.session.beginConfiguration()
-                    self.session.removeInput(audioInput)
-                    self.session.commitConfiguration()
-                    self.audioInput = nil
-                }
+        isMuted = !isMuted
+        Task {
+            if isMuted {
+                try? await mixer.attachAudio(nil)
             } else {
-                do {
-                    self.session.beginConfiguration()
-                    try self.configureAudioInput()
-                    self.session.commitConfiguration()
-                } catch {
-                    self.session.commitConfiguration()
-                    Task { @MainActor in
-                        self.errorMessage = error.localizedDescription
-                    }
-                    return
-                }
-            }
-
-            Task { @MainActor in
-                self.isMuted = shouldMute
+                try? await mixer.attachAudio(AVCaptureDevice.default(for: .audio))
             }
         }
     }
 
-    func setZoomFactor(_ requestedValue: CGFloat) {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-            guard let device = self.videoInput?.device else { return }
-
-            do {
-                try device.lockForConfiguration()
-                let minZoom = device.minAvailableVideoZoomFactor
-                let maxZoom = min(device.maxAvailableVideoZoomFactor, 6.0)
-                let safeZoom = min(max(requestedValue, minZoom), maxZoom)
-                device.videoZoomFactor = safeZoom
-                device.unlockForConfiguration()
-
-                Task { @MainActor in
-                    self.zoomFactor = safeZoom
-                    self.maxZoomFactor = maxZoom
+    func setZoomFactor(_ value: CGFloat) {
+        guard let device = currentPosition.captureDevice else { return }
+        // W-4: lockForConfiguration can block; offload to background then report back.
+        // Inner Task.detached avoids capturing self across actor boundaries (Swift 6 safe).
+        Task {
+            let result: Result<CGFloat, Error> = await Task.detached {
+                do {
+                    try device.lockForConfiguration()
+                    let minZ = device.minAvailableVideoZoomFactor
+                    let maxZ = Swift.min(device.maxAvailableVideoZoomFactor, 6.0)
+                    let safeZ = Swift.min(Swift.max(value, minZ), maxZ)
+                    device.videoZoomFactor = safeZ
+                    device.unlockForConfiguration()
+                    return .success(safeZ)
+                } catch {
+                    return .failure(error)
                 }
-            } catch {
-                Task { @MainActor in
-                    self.errorMessage = error.localizedDescription
-                }
+            }.value
+            switch result {
+            case .success(let safeZ): self.zoomFactor = safeZ
+            case .failure(let error): self.errorMessage = error.localizedDescription
             }
         }
     }
 
     func focus(at devicePoint: CGPoint) {
-        sessionQueue.async { [weak self] in
-            guard let self else { return }
-            guard let device = self.videoInput?.device else { return }
-
+        guard let device = currentPosition.captureDevice else { return }
+        // W-4: lockForConfiguration can block; run off the main actor.
+        Task.detached {
             do {
                 try device.lockForConfiguration()
-
                 if device.isFocusPointOfInterestSupported {
                     device.focusPointOfInterest = devicePoint
                     device.focusMode = .continuousAutoFocus
                 }
-
                 if device.isExposurePointOfInterestSupported {
                     device.exposurePointOfInterest = devicePoint
                     device.exposureMode = .continuousAutoExposure
                 }
-
                 device.unlockForConfiguration()
-            } catch {
-                Task { @MainActor in
-                    self.errorMessage = error.localizedDescription
-                }
-            }
+            } catch { }
         }
     }
 
-    private func configureSessionIfNeededOnQueue(preferredPosition: CameraPosition) throws {
-        guard !isConfigured else { return }
+    func clearError() {
+        errorMessage = nil
+    }
 
-        session.beginConfiguration()
-        session.sessionPreset = .high
+    // MARK: — RTMP publishing
 
+    func startPublishing(ingestURL: String) async throws {
+        guard !isPublishing else { throw StreamingError.broadcastAlreadyActive }
+        guard let url = URL(string: ingestURL) else { throw StreamingError.insecureIngestURL }
+        // O-5: Await RTMP factory registration to eliminate the app-init race.
+        await AIxcamApp.rtmpRegistration.value
+        guard let newSession = try await SessionBuilderFactory.shared
+            .make(url)
+            .setMode(.publish)
+            .build() else {
+            throw StreamingError.infrastructureNotPrepared
+        }
+        await mixer.addOutput(newSession.stream)
         do {
-            try configureVideoInput(position: preferredPosition)
-            try configureAudioInput()
-            session.commitConfiguration()
-            isConfigured = true
-
-            Task { @MainActor in
-                self.currentPosition = preferredPosition
-                self.isMuted = false
-                self.zoomFactor = 1.0
-                self.maxZoomFactor = min(self.videoInput?.device.maxAvailableVideoZoomFactor ?? 1.0, 6.0)
-            }
+            try await newSession.connect { }
         } catch {
-            session.commitConfiguration()
+            // Connect failed: detach the stream output and tear down the session
+            // so a retry doesn't double-attach an orphaned output to the mixer.
+            await mixer.removeOutput(newSession.stream)
+            try? await newSession.close()
             throw error
         }
+        session = newSession
+        isPublishing = true
     }
 
-    private func configureVideoInput(position: CameraPosition) throws {
-        if let existingVideoInput = videoInput {
-            session.removeInput(existingVideoInput)
-            videoInput = nil
-        }
-
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position.avPosition) else {
-            throw CameraError.cameraUnavailable(position: position)
-        }
-
-        let newVideoInput = try AVCaptureDeviceInput(device: device)
-
-        guard session.canAddInput(newVideoInput) else {
-            throw CameraError.cannotAddVideoInput
-        }
-
-        session.addInput(newVideoInput)
-        videoInput = newVideoInput
-
-        let maxZoom = min(device.maxAvailableVideoZoomFactor, 6.0)
-        Task { @MainActor in
-            self.zoomFactor = 1.0
-            self.maxZoomFactor = maxZoom
-        }
+    func stopPublishing() async throws {
+        guard let session else { return }
+        try await session.close()
+        await mixer.removeOutput(session.stream)
+        self.session = nil
+        isPublishing = false
     }
 
-    private func configureAudioInput() throws {
-        if let existingAudioInput = audioInput {
-            session.removeInput(existingAudioInput)
-            audioInput = nil
-        }
+    // MARK: — Private helpers
 
-        guard let microphone = AVCaptureDevice.default(for: .audio) else {
-            throw CameraError.microphoneUnavailable
-        }
-
-        let newAudioInput = try AVCaptureDeviceInput(device: microphone)
-
-        guard session.canAddInput(newAudioInput) else {
-            throw CameraError.cannotAddAudioInput
-        }
-
-        session.addInput(newAudioInput)
-        audioInput = newAudioInput
+    private func updateMaxZoom(for device: AVCaptureDevice) {
+        let raw = Swift.min(device.maxAvailableVideoZoomFactor, 6.0)
+        maxZoomFactor = raw > 1.0 ? raw : 1.01
     }
 }
 
+// MARK: — Preview source for MTHKViewRepresentable
+
+extension CameraManager: MTHKViewRepresentable.PreviewSource {
+    nonisolated func connect(to view: MTHKView) {
+        Task { @MainActor in
+            self.previewOutput = view
+            if self.isMixerReady {
+                await self.mixer.addOutput(view)
+            }
+        }
+    }
+}
+
+// MARK: — Camera errors
+
 enum CameraError: LocalizedError {
-    case cameraUnavailable(position: CameraManager.CameraPosition)
+    case cameraUnavailable(position: CameraPosition)
     case microphoneUnavailable
-    case cannotAddVideoInput
-    case cannotAddAudioInput
 
     var errorDescription: String? {
         switch self {
         case .cameraUnavailable(let position):
             switch position {
-            case .front:
-                return "Front camera is unavailable on this device."
-            case .back:
-                return "Back camera is unavailable on this device."
+            case .front: return "Front camera is unavailable on this device."
+            case .back:  return "Back camera is unavailable on this device."
             }
         case .microphoneUnavailable:
             return "Microphone is unavailable on this device."
-        case .cannotAddVideoInput:
-            return "Could not configure the camera input."
-        case .cannotAddAudioInput:
-            return "Could not configure the microphone input."
         }
     }
 }

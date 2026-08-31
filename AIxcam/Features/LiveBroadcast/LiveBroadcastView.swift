@@ -3,7 +3,9 @@ import SwiftUI
 struct LiveBroadcastView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.dismiss) private var dismiss
     @State private var viewModel: LiveBroadcastViewModel
+    @State private var chatDraft: String = ""
 
     init(viewModel: LiveBroadcastViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -12,7 +14,7 @@ struct LiveBroadcastView: View {
     var body: some View {
         ZStack {
             CameraPreviewView(
-                session: viewModel.cameraManager.session,
+                previewSource: viewModel.cameraManager,
                 onTapToFocus: { devicePoint, layerPoint in
                     viewModel.focus(at: devicePoint, layerPoint: layerPoint)
                 }
@@ -112,6 +114,7 @@ struct LiveBroadcastView: View {
 
     private var topBar: some View {
         HStack(spacing: 12) {
+            closeButton
             statusBadge
             infrastructureBadge
 
@@ -124,6 +127,28 @@ struct LiveBroadcastView: View {
                 .foregroundStyle(.white)
                 .background(.ultraThinMaterial, in: Capsule())
         }
+    }
+
+    private var closeButton: some View {
+        Button {
+            // End an active broadcast before leaving so we never orphan a live
+            // stream; onDisappear performs the same cleanup as a safety net.
+            if viewModel.isLive {
+                Task {
+                    await viewModel.endLive()
+                    dismiss()
+                }
+            } else {
+                dismiss()
+            }
+        } label: {
+            Image(systemName: "xmark")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 34, height: 34)
+                .background(.ultraThinMaterial, in: Circle())
+        }
+        .accessibilityLabel("Close broadcast")
     }
 
     private var statusBadge: some View {
@@ -200,13 +225,55 @@ struct LiveBroadcastView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.85))
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("@LuxeFan: This stream quality is elite")
-                Text("@WaveRider: Front cam looks clean")
-                Text("@NovaTips: Sending tips soon")
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 5) {
+                        if viewModel.chatMessages.isEmpty {
+                            Text(viewModel.isLive ? "Chat is live — say something!" : "Chat starts when you go live.")
+                                .font(.footnote)
+                                .foregroundStyle(.white.opacity(0.4))
+                        } else {
+                            ForEach(viewModel.chatMessages) { msg in
+                                HStack(alignment: .top, spacing: 4) {
+                                    Text(msg.sender)
+                                        .font(.footnote.weight(.semibold))
+                                        .foregroundStyle(.pink.opacity(0.9))
+                                    Text(msg.text)
+                                        .font(.footnote)
+                                        .foregroundStyle(.white)
+                                }
+                                .id(msg.id)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 72)
+                .onChange(of: viewModel.chatMessages.count) { _, _ in
+                    if let last = viewModel.chatMessages.last {
+                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    }
+                }
             }
-            .font(.footnote)
-            .foregroundStyle(.white)
+
+            if viewModel.isLive {
+                HStack(spacing: 8) {
+                    TextField("Say something…", text: $chatDraft)
+                        .font(.caption)
+                        .foregroundStyle(.white)
+                        .submitLabel(.send)
+                        .onSubmit { sendChat() }
+
+                    Button { sendChat() } label: {
+                        Image(systemName: "paperplane.fill")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(chatDraft.trimmingCharacters(in: .whitespaces).isEmpty ? .white.opacity(0.3) : .pink)
+                    }
+                    .disabled(chatDraft.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
@@ -367,6 +434,13 @@ struct LiveBroadcastView: View {
             .frame(width: 46, height: 46)
             .background(Color.white.opacity(0.12), in: Circle())
     }
+
+    private func sendChat() {
+        let text = chatDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        viewModel.sendChatMessage(text)
+        chatDraft = ""
+    }
 }
 
 private struct FocusIndicatorView: View {
@@ -378,8 +452,7 @@ private struct FocusIndicatorView: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.yellow.opacity(0.08))
             )
-            .transition(.scale.combined(with: .opacity))
-            .animation(.easeOut(duration: 0.18), value: UUID())
+            .transition(.scale(scale: 0.85).combined(with: .opacity))
     }
 }
 

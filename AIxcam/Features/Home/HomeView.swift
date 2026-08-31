@@ -1,6 +1,10 @@
+import FirebaseAuth
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(AppRouter.self) private var appRouter
+    @State private var historyService = StreamHistoryService()
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -14,14 +18,14 @@ struct HomeView: View {
 
                         NavigationLink {
                             LiveBroadcastView(
-                                viewModel: LiveBroadcastViewModel(creatorID: "creator-demo")
+                                viewModel: LiveBroadcastViewModel(creatorID: appRouter.currentUser?.uid ?? "")
                             )
                             .toolbar(.hidden, for: .navigationBar)
                         } label: {
                             goLiveCard
                         }
 
-                        pastStreamsPlaceholder
+                        pastStreamsSection
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
@@ -29,6 +33,10 @@ struct HomeView: View {
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
+            .onAppear {
+                guard let uid = appRouter.currentUser?.uid, !uid.isEmpty else { return }
+                Task { await historyService.fetchHistory(creatorID: uid) }
+            }
         }
     }
 
@@ -51,7 +59,7 @@ struct HomeView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Hello, Creator")
+            Text("Hello, \(appRouter.displayName)")
                 .font(.title.weight(.bold))
                 .foregroundStyle(.white)
             Text("Ready to go live?")
@@ -81,7 +89,7 @@ struct HomeView: View {
                 Text("Start Live Stream")
                     .font(.headline)
                     .foregroundStyle(.white)
-                Text("Stream setup → Stage 3")
+                Text("Camera, mic & live chat")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.5))
             }
@@ -103,27 +111,78 @@ struct HomeView: View {
         )
     }
 
-    private var pastStreamsPlaceholder: some View {
+    private var pastStreamsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Past Streams")
                 .font(.headline)
                 .foregroundStyle(.white)
 
-            Text("Your stream history will appear here.")
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.38))
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, 40)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.white.opacity(0.04))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6]))
-                                .foregroundStyle(Color.white.opacity(0.1))
-                        )
-                )
+            if historyService.isLoading && historyService.recentStreams.isEmpty {
+                ProgressView()
+                    .tint(.white)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 32)
+            } else if historyService.recentStreams.isEmpty {
+                Text("Your stream history will appear here.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.38))
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color.white.opacity(0.04))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6]))
+                                    .foregroundStyle(Color.white.opacity(0.1))
+                            )
+                    )
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(historyService.recentStreams) { record in
+                        streamRecordRow(record)
+                    }
+                }
+            }
         }
+    }
+
+    private func streamRecordRow(_ record: StreamRecord) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.07))
+                    .frame(width: 42, height: 42)
+                Image(systemName: "play.rectangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.pink.opacity(0.8))
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(record.formattedDate)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.white)
+                Text(record.formattedDuration)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+
+            Spacer()
+
+            Label("\(record.peakViewers)", systemImage: "person.2.fill")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.white.opacity(0.6))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+        )
     }
 }
 

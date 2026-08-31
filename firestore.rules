@@ -1,0 +1,97 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Stream session records written directly by the creator's client.
+    // A creator may only create/read/update records tied to their own uid, and
+    // may never reassign ownership. This blocks forging records for other creators.
+    match /streams/{streamId} {
+      allow read: if request.auth != null
+                  && resource.data.creatorID == request.auth.uid;
+
+      allow create: if request.auth != null
+                    && request.resource.data.creatorID == request.auth.uid
+                    && request.resource.data.peakViewers is int
+                    && request.resource.data.peakViewers >= 0;
+
+      // Updates (endSession) must not change the owner and may only touch
+      // the two mutable fields.
+      allow update: if request.auth != null
+                    && resource.data.creatorID == request.auth.uid
+                    && request.resource.data.creatorID == resource.data.creatorID
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['endedAt', 'peakViewers']);
+
+      allow delete: if false;
+    }
+
+    // Viewer profiles. The document ID is the owner's uid, so ownership is
+    // structural and cannot be forged by a client-supplied field. Reads are
+    // restricted to the owner: turn-ons and fetishes are sensitive personal data
+    // and the per-field visibility settings are enforced by the backend when it
+    // projects a profile for someone else, never by an open client read.
+    match /viewerProfiles/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow create, update: if request.auth != null
+                            && request.auth.uid == uid
+                            && request.resource.data.uid == uid
+                            && request.resource.data.displayName is string
+                            && request.resource.data.displayName.size() > 0
+                            && request.resource.data.displayName.size() <= 30
+                            && request.resource.data.aboutMe is string
+                            && request.resource.data.aboutMe.size() <= 600
+                            && request.resource.data.turnOns is list
+                            && request.resource.data.turnOns.size() <= 20
+                            && request.resource.data.fetishes is list
+                            && request.resource.data.fetishes.size() <= 20
+                            // 18+ gate. Rules cannot do calendar maths, so this
+                            // bounds birthdate against request time using a fixed
+                            // 18 average-Gregorian-year interval (568025136000 ms)
+                            // minus one day of slack. The slack matters: without it
+                            // leap-year drift can reject someone on their actual
+                            // 18th birthday. The client enforces the exact calendar
+                            // age; this is the backstop against a forged client.
+                            && request.resource.data.birthdate is timestamp
+                            && request.resource.data.birthdate.toMillis()
+                                 <= request.time.toMillis() - 567938736000;
+
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Buyer→creator attribution for a purchase. The client creates one doc per
+    // purchase (keyed by the appAccountToken) right before buying. A user may only
+    // create a mapping stamped with their own uid, and may never read or alter
+    // mappings — the backend ledger reads them via the Admin SDK.
+    match /attributions/{token} {
+      allow create: if request.auth != null
+                    && request.resource.data.buyerUid == request.auth.uid
+                    && request.resource.data.creatorId is string
+                    && request.resource.data.creatorId.size() > 0;
+      allow read, update, delete: if false;
+    }
+
+    // The following collections are written and read exclusively by trusted
+    // backend Cloud Functions (Admin SDK bypasses these rules). Clients must
+    // never touch them directly — creatorChannels in particular holds the RTMP
+    // stream key, which must never be exposed to a client read.
+    match /creatorChannels/{uid} {
+      allow read, write: if false;
+    }
+    match /identityVerifications/{uid} {
+      allow read, write: if false;
+    }
+    match /transactions/{txnId} {
+      allow read, write: if false;
+    }
+    match /rateLimits/{docId} {
+      allow read, write: if false;
+    }
+
+    // Deny everything not explicitly allowed above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -17,7 +17,7 @@ struct StreamingInfrastructureStatus: Sendable {
     let description: String
 }
 
-enum StreamingError: LocalizedError {
+enum StreamingError: LocalizedError, Equatable {
     case infrastructureNotPrepared
     case insecureIngestURL
     case disallowedHost
@@ -43,17 +43,21 @@ enum StreamingError: LocalizedError {
     }
 }
 
-struct StreamingSecurityPolicy: Sendable {
+// Nonisolated so the policy (an immutable Sendable value) and its `default`
+// can be used from any actor, including the nonisolated test target.
+nonisolated struct StreamingSecurityPolicy: Sendable {
     let ingestURL: URL
     let allowedHosts: Set<String>
 
-    static let `default` = StreamingSecurityPolicy(
-        ingestURL: URL(string: "https://stream.aixlive.local/ingest")!,
-        allowedHosts: ["stream.aixlive.local"]
-    )
+    static let `default`: StreamingSecurityPolicy = {
+        guard let url = URL(string: "https://stream.aixcam.local/ingest") else {
+            preconditionFailure("Default ingest URL literal is malformed — programmer error")
+        }
+        return StreamingSecurityPolicy(ingestURL: url, allowedHosts: ["stream.aixcam.local"])
+    }()
 
     func validate() throws {
-        guard ["https", "wss"].contains(ingestURL.scheme?.lowercased() ?? "") else {
+        guard ["https", "wss", "rtmps"].contains(ingestURL.scheme?.lowercased() ?? "") else {
             throw StreamingError.insecureIngestURL
         }
 
@@ -82,6 +86,9 @@ struct StreamingSecurityPolicy: Sendable {
 }
 
 protocol StreamingService: Sendable {
+    /// The IVS Chat room ARN for this channel — provided by the service to avoid
+    /// callers reaching directly into IVSConfiguration (O-4 DI fix).
+    var chatRoomARN: String { get }
     func prepareInfrastructure() async throws -> StreamingInfrastructureStatus
     func startBroadcast(creatorID: String) async throws -> BroadcastSession
     func endBroadcast(streamID: String) async throws
@@ -108,13 +115,100 @@ private actor StreamingStateStore {
     }
 }
 
-struct MockStreamingService: StreamingService {
+// MARK: — Real IVS streaming service
+
+/// Production StreamingService implementation backed by HaishinKit + AWS IVS.
+///
+/// Holds a reference to CameraManager so it can trigger RTMP connect/publish
+/// on the same RTMPStream that is already attached to the camera preview.
+@MainActor
+final class IVSStreamingService: StreamingService {
+    private let credentialsProvider: StreamCredentialsProviding
+    private let cameraManager: CameraManager
+
+    /// Credentials fetched from the backend during `prepareInfrastructure`.
+    /// Never sourced from the app bundle — see `IVSConfiguration` security note.
+    private var configuration: IVSConfiguration?
+
+    init(credentialsProvider: StreamCredentialsProviding, cameraManager: CameraManager) {
+        self.credentialsProvider = credentialsProvider
+        self.cameraManager = cameraManager
+    }
+
+    /// Available only after `prepareInfrastructure` has fetched credentials.
+    /// Empty before then; chat connect fails gracefully in that window.
+    var chatRoomARN: String { configuration?.chatRoomARN ?? "" }
+
+    func prepareInfrastructure() async throws -> StreamingInfrastructureStatus {
+        // Fetch credentials from the authenticated backend. The stream key is
+        // never shipped in the binary, so this network hop is mandatory.
+        let configuration: IVSConfiguration
+        do {
+            configuration = try await credentialsProvider.fetchCredentials()
+        } catch {
+            return StreamingInfrastructureStatus(
+                isReady: false,
+                securityLevel: .degraded,
+                description: "Could not obtain streaming credentials — check sign-in and connectivity"
+            )
+        }
+
+        // Surface a clear "not configured" state rather than crashing when the
+        // backend has no channel provisioned for this creator yet.
+        guard !configuration.isPlaceholder else {
+            return StreamingInfrastructureStatus(
+                isReady: false,
+                securityLevel: .degraded,
+                description: "No streaming channel is provisioned for this account"
+            )
+        }
+
+        // Validate the ingest URL scheme and host before attempting a connection.
+        guard let url = URL(string: "rtmps://\(configuration.ingestEndpoint)") else {
+            throw StreamingError.insecureIngestURL
+        }
+        let policy = StreamingSecurityPolicy(
+            ingestURL: url,
+            allowedHosts: [configuration.ingestEndpoint]
+        )
+        try policy.validate()
+
+        self.configuration = configuration
+
+        return StreamingInfrastructureStatus(
+            isReady: true,
+            securityLevel: .secure,
+            description: "IVS endpoint validated — ready to broadcast"
+        )
+    }
+
+    func startBroadcast(creatorID: String) async throws -> BroadcastSession {
+        guard let configuration, !configuration.isPlaceholder else {
+            throw StreamingError.infrastructureNotPrepared
+        }
+        try await cameraManager.startPublishing(ingestURL: configuration.rtmpsURL)
+        return BroadcastSession(streamID: UUID().uuidString, startedAt: .now)
+    }
+
+    func endBroadcast(streamID: String) async throws {
+        try await cameraManager.stopPublishing()
+    }
+}
+
+// MARK: — Mock (kept for Xcode Previews and unit tests)
+
+// Explicitly nonisolated: the app target defaults to main-actor isolation, but
+// this mock is a Sendable value type whose state lives in an actor, so it must
+// stay callable from any context (tests run off the main actor).
+nonisolated struct MockStreamingService: StreamingService {
     private let policy: StreamingSecurityPolicy
     private let stateStore = StreamingStateStore()
 
     init(policy: StreamingSecurityPolicy = .default) {
         self.policy = policy
     }
+
+    var chatRoomARN: String { "arn:aws:ivschat:us-east-1:000000000000:room/mock-preview" }
 
     func prepareInfrastructure() async throws -> StreamingInfrastructureStatus {
         try policy.validate()

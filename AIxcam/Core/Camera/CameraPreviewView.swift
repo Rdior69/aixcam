@@ -1,58 +1,28 @@
 import AVFoundation
+import HaishinKit
 import SwiftUI
 
-struct CameraPreviewView: UIViewRepresentable {
-    let session: AVCaptureSession
+/// Camera preview powered by HaishinKit's Metal renderer.
+/// Wraps MTHKViewRepresentable and overlays a tap-to-focus gesture.
+struct CameraPreviewView: View {
+    let previewSource: any MTHKViewRepresentable.PreviewSource
     var onTapToFocus: ((CGPoint, CGPoint) -> Void)?
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onTapToFocus: onTapToFocus)
-    }
-
-    func makeUIView(context: Context) -> CameraPreviewContainerView {
-        let view = CameraPreviewContainerView()
-        view.previewLayer.session = session
-        view.previewLayer.videoGravity = .resizeAspectFill
-
-        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
-        view.addGestureRecognizer(tapGesture)
-        context.coordinator.previewView = view
-
-        return view
-    }
-
-    func updateUIView(_ uiView: CameraPreviewContainerView, context: Context) {
-        uiView.previewLayer.session = session
-        context.coordinator.previewView = uiView
-        context.coordinator.onTapToFocus = onTapToFocus
-    }
-
-    final class Coordinator: NSObject {
-        weak var previewView: CameraPreviewContainerView?
-        var onTapToFocus: ((CGPoint, CGPoint) -> Void)?
-
-        init(onTapToFocus: ((CGPoint, CGPoint) -> Void)?) {
-            self.onTapToFocus = onTapToFocus
+    var body: some View {
+        GeometryReader { geo in
+            MTHKViewRepresentable(previewSource: previewSource, videoGravity: .resizeAspectFill)
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onEnded { value in
+                            let loc = value.location
+                            guard geo.size.width > 0, geo.size.height > 0 else { return }
+                            let devicePoint = CGPoint(
+                                x: loc.x / geo.size.width,
+                                y: loc.y / geo.size.height
+                            )
+                            onTapToFocus?(devicePoint, loc)
+                        }
+                )
         }
-
-        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
-            guard let previewView else { return }
-            let layerPoint = gesture.location(in: previewView)
-            let devicePoint = previewView.previewLayer.captureDevicePointConverted(fromLayerPoint: layerPoint)
-            onTapToFocus?(devicePoint, layerPoint)
-        }
-    }
-}
-
-final class CameraPreviewContainerView: UIView {
-    override class var layerClass: AnyClass {
-        AVCaptureVideoPreviewLayer.self
-    }
-
-    var previewLayer: AVCaptureVideoPreviewLayer {
-        guard let layer = self.layer as? AVCaptureVideoPreviewLayer else {
-            fatalError("Expected AVCaptureVideoPreviewLayer")
-        }
-        return layer
     }
 }
