@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AppRouter.self) private var appRouter
     @State private var profileService = ViewerProfileService()
+    @State private var verificationService = IdentityVerificationService()
 
     var body: some View {
         Group {
@@ -16,11 +17,17 @@ struct ContentView: View {
             }
         }
         .environment(profileService)
+        .environment(verificationService)
         // Reload on every auth transition: signing out and back in as someone
-        // else must not leave the previous person's profile on screen.
+        // else must not leave the previous person's profile or verification
+        // status on screen.
         .task(id: appRouter.currentUser?.uid) {
-            guard appRouter.isAuthenticated else { return }
+            guard appRouter.isAuthenticated else {
+                verificationService.reset()
+                return
+            }
             await profileService.load()
+            await verificationService.refresh()
         }
     }
 

@@ -3,20 +3,20 @@ import SwiftUI
 
 struct IDVerificationView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(IdentityVerificationService.self) private var verificationService
 
     // SECURITY: Government-issued identity data (legal name, ID number, DOB) is
     // sensitive PII and is NEVER persisted on-device. These fields live only in
     // memory for the lifetime of the screen and are transmitted over TLS to the
-    // verification backend on submit. Only the non-sensitive submission status is
-    // persisted locally so the UI can reflect an "under review" state on return.
+    // verification backend on submit. The submission *status* is not persisted
+    // locally either — it is read back from the backend, because broadcasting is
+    // gated on it and a device-local flag would be forgeable.
     @State private var legalName       = ""
     @State private var idNumber        = ""
     @State private var countryOfIssue  = ""
     @State private var idTypeRaw       = IDType.passport.rawValue
     @State private var ageConfirmed    = false
     @State private var consentGiven    = false
-
-    @AppStorage("idv_submittedDate")   private var submittedDate   = ""
 
     @State private var dateOfBirth: Date = Calendar.current.date(
         byAdding: .year, value: -18, to: Date()
@@ -36,7 +36,15 @@ struct IDVerificationView: View {
         ageConfirmed && consentGiven
     }
 
-    private var isSubmitted: Bool { !submittedDate.isEmpty }
+    private var status: IdentityVerificationStatus { verificationService.status }
+
+    /// There is a submission on file, so show its outcome.
+    private var hasSubmission: Bool { status != .unverified }
+
+    /// Lock the form while a submission is in review or already approved, but
+    /// *not* when it was rejected — a rejected creator has to be able to correct
+    /// their details and resubmit.
+    private var isFormLocked: Bool { status == .pending || status == .approved }
 
     var body: some View {
         ZStack {
@@ -46,8 +54,8 @@ struct IDVerificationView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     headerBanner
 
-                    if isSubmitted {
-                        submittedBanner
+                    if hasSubmission {
+                        submissionStatusBanner
                     }
 
                     Group {
@@ -77,7 +85,7 @@ struct IDVerificationView: View {
                             isOn: $consentGiven
                         )
                     }
-                    .disabled(isSubmitted)
+                    .disabled(isFormLocked)
 
                     submitButton
                 }
@@ -128,25 +136,57 @@ struct IDVerificationView: View {
         .padding(.top, 8)
     }
 
-    private var submittedBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "clock.badge.checkmark.fill")
-                .foregroundStyle(.green)
+    /// Reports the backend's verdict. Previously this claimed "Submitted on
+    /// {date} · Under review" from a locally stored date, which meant it kept
+    /// saying "under review" no matter what the reviewer actually decided.
+    private var submissionStatusBanner: some View {
+        let tint: Color = switch status {
+        case .approved:   .green
+        case .pending:    .yellow
+        case .rejected:   .red
+        case .unverified: .cyan
+        }
+
+        let title = switch status {
+        case .approved:   "Identity Verified"
+        case .pending:    "Verification Submitted"
+        case .rejected:   "Verification Not Accepted"
+        case .unverified: "Not Verified"
+        }
+
+        let detail = switch status {
+        case .approved:   "You can start live broadcasting."
+        case .pending:    "Under review. This usually takes a few minutes."
+        case .rejected:   "Check your details and submit again."
+        case .unverified: "Required for live broadcasting."
+        }
+
+        let icon = switch status {
+        case .approved:   "checkmark.shield.fill"
+        case .pending:    "clock.badge.checkmark.fill"
+        case .rejected:   "exclamationmark.shield.fill"
+        case .unverified: "shield.lefthalf.filled"
+        }
+
+        return HStack(spacing: 10) {
+            Image(systemName: icon)
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Verification Submitted")
+                Text(title)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white)
-                Text("Submitted on \(submittedDate) · Under review")
+                Text(detail)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.5))
             }
             Spacer()
         }
         .padding(14)
-        .background(Color.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                .stroke(tint.opacity(0.3), lineWidth: 1)
         )
     }
 
@@ -197,11 +237,11 @@ struct IDVerificationView: View {
             Group {
                 if isSaving {
                     ProgressView().tint(.white)
-                } else if isSubmitted {
-                    Label("Submitted", systemImage: "checkmark")
+                } else if isFormLocked {
+                    Label(status == .approved ? "Verified" : "Submitted", systemImage: "checkmark")
                         .font(.subheadline.weight(.semibold))
                 } else {
-                    Text("Submit Verification")
+                    Text(status == .rejected ? "Resubmit Verification" : "Submit Verification")
                         .font(.subheadline.weight(.semibold))
                 }
             }
@@ -209,13 +249,13 @@ struct IDVerificationView: View {
             .padding(.vertical, 15)
             .foregroundStyle(.white)
             .background(
-                isSubmitted
+                isFormLocked
                     ? Color.green.opacity(0.4)
                     : (isFormValid ? Color.cyan.opacity(0.8) : Color.white.opacity(0.12)),
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
         }
-        .disabled(!isFormValid || isSubmitted || isSaving)
+        .disabled(!isFormValid || isFormLocked || isSaving)
         .padding(.top, 8)
     }
 
@@ -305,9 +345,9 @@ struct IDVerificationView: View {
         idNumber = ""
         countryOfIssue = ""
 
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        submittedDate = formatter.string(from: Date())
+        // Pull the new status back from the backend rather than assuming it —
+        // the KYC provider decides, not the client.
+        await verificationService.refresh()
 
         withAnimation(.spring(response: 0.4)) { showSuccess = true }
         try? await Task.sleep(for: .seconds(2.5))
@@ -388,4 +428,7 @@ enum IDType: String, CaseIterable, Identifiable {
     NavigationStack {
         IDVerificationView()
     }
+    .environment(IdentityVerificationService(
+        provider: StaticIdentityVerificationProvider(status: .unverified)
+    ))
 }

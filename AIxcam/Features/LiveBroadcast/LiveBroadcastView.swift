@@ -33,6 +33,7 @@ struct LiveBroadcastView: View {
             VStack(spacing: 12) {
                 topBar
                 infrastructurePanel
+                verificationBanner
                 Spacer()
                 chatOverlay
                 tipOverlay
@@ -307,6 +308,37 @@ struct LiveBroadcastView: View {
             }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.78), value: viewModel.isAnimatingTip)
+    }
+
+    /// Explains why Go Live is disabled when identity verification is the reason.
+    /// A greyed-out button with no explanation reads as a bug.
+    @ViewBuilder
+    private var verificationBanner: some View {
+        if let reason = viewModel.verificationBlockedReason {
+            HStack(spacing: 10) {
+                Image(systemName: "shield.lefthalf.filled")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.cyan)
+                    .accessibilityHidden(true)
+
+                Text(reason)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.85))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(Color.black.opacity(0.45))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(Color.cyan.opacity(0.35), lineWidth: 1)
+                    )
+            )
+        }
     }
 
     private var controlBar: some View {

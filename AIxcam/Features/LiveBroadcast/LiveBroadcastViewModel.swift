@@ -13,6 +13,9 @@ final class LiveBroadcastViewModel {
     var errorMessage: String?
     var focusIndicatorPoint: CGPoint?
     var isPrivacyShieldVisible = false
+    /// Server-sourced. Starts `unverified` so Go Live stays disabled until the
+    /// backend has actually confirmed otherwise — this must fail closed.
+    private(set) var verificationStatus: IdentityVerificationStatus = .unverified
     var infrastructureStatus = StreamingInfrastructureStatus(
         isReady: false,
         securityLevel: .initializing,
@@ -23,6 +26,7 @@ final class LiveBroadcastViewModel {
     private(set) var chatService = ChatService()
 
     private let streamingService: StreamingService
+    private let verificationProvider: IdentityVerificationProviding
     private let historyService = StreamHistoryService()
     private let creatorID: String
     private var broadcastSession: BroadcastSession?
@@ -43,9 +47,11 @@ final class LiveBroadcastViewModel {
     init(
         creatorID: String,
         cameraManager: CameraManager? = nil,
-        streamingService: StreamingService? = nil
+        streamingService: StreamingService? = nil,
+        verificationProvider: IdentityVerificationProviding = FirebaseIdentityVerificationProvider()
     ) {
         self.creatorID = creatorID
+        self.verificationProvider = verificationProvider
         let cm = cameraManager ?? CameraManager()
         self.cameraManager = cm
         self.streamingService = streamingService ?? IVSStreamingService(
@@ -69,7 +75,23 @@ final class LiveBroadcastViewModel {
     }
 
     var canStartLive: Bool {
-        hasPermission && infrastructureStatus.isReady && !isPreparing && !isPrivacyShieldVisible
+        hasPermission
+        && isIdentityVerified
+        && infrastructureStatus.isReady
+        && !isPreparing
+        && !isPrivacyShieldVisible
+    }
+
+    /// Broadcasting is gated on identity verification: this is an 18+ platform,
+    /// so an unverified account must not be able to put a camera feed out.
+    var isIdentityVerified: Bool {
+        verificationStatus.allowsBroadcasting
+    }
+
+    /// Why Go Live is unavailable on verification grounds, or nil when it isn't.
+    /// Surfaced in the UI so a disabled button is never unexplained.
+    var verificationBlockedReason: String? {
+        verificationStatus.broadcastBlockedReason
     }
 
     var canEndLive: Bool {
@@ -77,8 +99,21 @@ final class LiveBroadcastViewModel {
     }
 
     func onAppear() async {
+        await refreshVerificationStatus()
         await requestPermissionsAndPrepareCamera()
         await ensureInfrastructurePrepared(forceRefresh: false)
+    }
+
+    /// Re-read the gate from the backend. Called on appear and on foreground, so
+    /// a creator approved while the app was backgrounded isn't left locked out.
+    func refreshVerificationStatus() async {
+        do {
+            verificationStatus = try await verificationProvider.fetchStatus()
+        } catch {
+            // Leave the last known status in place. A network failure must not
+            // promote an unverified creator, and must not demote a verified one
+            // mid-session either.
+        }
     }
 
     func onDisappear() {
@@ -111,6 +146,7 @@ final class LiveBroadcastViewModel {
         // stale) hasPermission flag: a user may have just granted access in
         // Settings, in which case we must clear the overlay and start the camera.
         Task {
+            await refreshVerificationStatus()
             await requestPermissionsAndPrepareCamera()
             await ensureInfrastructurePrepared(forceRefresh: false)
         }
@@ -123,6 +159,15 @@ final class LiveBroadcastViewModel {
     func goLive() async {
         guard hasPermission else { return }
         guard !isLive else { return }
+
+        // Re-check the gate here, not just in canStartLive. A disabled button is
+        // a UI affordance, not an authorisation boundary — goLive() is reachable
+        // from anywhere that holds the view model.
+        await refreshVerificationStatus()
+        guard isIdentityVerified else {
+            errorMessage = verificationBlockedReason
+            return
+        }
 
         guard infrastructureStatus.isReady else {
             errorMessage = "Secure streaming infrastructure is still initializing."

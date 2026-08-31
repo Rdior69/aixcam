@@ -36,4 +36,7 @@ struct MainTabView: View {
     MainTabView()
         .environment(AppRouter())
         .environment(ViewerProfileService())
+        .environment(IdentityVerificationService(
+            provider: StaticIdentityVerificationProvider(status: .approved)
+        ))
 }

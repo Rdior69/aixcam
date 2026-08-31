@@ -421,6 +421,40 @@ exports.submitIdentityVerification = functions.https.onCall(
 );
 
 /**
+ * Returns the caller's identity-verification status.
+ *
+ * The client cannot read identityVerifications/{uid} directly — the rules deny it,
+ * because that document also carries idType and countryOfIssue. This returns only
+ * the status enum, so the app can gate broadcasting on server truth without
+ * exposing anything about the document it came from.
+ *
+ * Absent document means the person has never submitted, which is "unverified"
+ * rather than an error.
+ */
+exports.getIdentityVerificationStatus = functions.https.onCall(
+  async (data, context) => {
+    assertVerifiedCaller(context);
+
+    const snapshot = await admin
+      .firestore()
+      .collection("identityVerifications")
+      .doc(context.auth.uid)
+      .get();
+
+    if (!snapshot.exists) {
+      return { status: "unverified" };
+    }
+
+    // Never reflect an unrecognised value back to the client: an unexpected
+    // status must fail closed, not be treated as permission to broadcast.
+    const allowed = ["unverified", "pending", "approved", "rejected"];
+    const status = snapshot.get("status");
+
+    return { status: allowed.includes(status) ? status : "unverified" };
+  }
+);
+
+/**
  * Records a StoreKit transaction after server-side re-verification.
  *
  * The client sends only the App Store-signed JWS. We verify that signature

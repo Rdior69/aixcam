@@ -4,12 +4,21 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(AppRouter.self) private var appRouter
     @Environment(ViewerProfileService.self) private var profileService
+    @Environment(IdentityVerificationService.self) private var verificationService
     @State private var isEditingName = false
     @State private var nameDraft = ""
     @State private var isSaving = false
 
-    @AppStorage("idv_submittedDate") private var idvSubmittedDate = ""
-    private var isVerified: Bool { !idvSubmittedDate.isEmpty }
+    /// Server truth. This used to read an `@AppStorage("idv_submittedDate")`
+    /// flag, which meant the app believed whatever the device claimed: it was
+    /// forgeable, and a reinstall silently reset a verified creator to
+    /// unverified. Broadcasting is gated on this, so it has to come from the
+    /// backend.
+    private var verificationStatus: IdentityVerificationStatus {
+        verificationService.status
+    }
+
+    private var isVerified: Bool { verificationStatus == .approved }
 
     var body: some View {
         NavigationStack {
@@ -103,29 +112,29 @@ struct ProfileView: View {
 
             NavigationLink(destination: IDVerificationView()) {
                 HStack(spacing: 14) {
-                    Image(systemName: isVerified ? "checkmark.shield.fill" : "shield.lefthalf.filled")
+                    Image(systemName: verificationIcon)
                         .font(.title3)
-                        .foregroundStyle(isVerified ? .green : .cyan)
+                        .foregroundStyle(verificationTint)
                         .frame(width: 32)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("ID Verification")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.white)
-                        Text(isVerified ? "Submitted · Under review" : "Required for live broadcasting")
+                        Text(verificationSubtitle)
                             .font(.caption)
                             .foregroundStyle(.white.opacity(0.5))
                     }
 
                     Spacer()
 
-                    if !isVerified {
-                        Text("Required")
+                    if showsActionBadge {
+                        Text(verificationStatus == .rejected ? "Action needed" : "Required")
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.black)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.cyan.opacity(0.85), in: Capsule())
+                            .background(verificationTint.opacity(0.85), in: Capsule())
                     }
 
                     Image(systemName: "chevron.right")
@@ -137,13 +146,43 @@ struct ProfileView: View {
                 .background(Color.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(
-                            isVerified ? Color.green.opacity(0.25) : Color.cyan.opacity(0.2),
-                            lineWidth: 1
-                        )
+                        .stroke(verificationTint.opacity(isVerified ? 0.25 : 0.2), lineWidth: 1)
                 )
             }
         }
+    }
+
+    // MARK: - Verification presentation
+
+    private var verificationIcon: String {
+        switch verificationStatus {
+        case .approved:   "checkmark.shield.fill"
+        case .pending:    "shield.lefthalf.filled.badge.checkmark"
+        case .rejected:   "exclamationmark.shield.fill"
+        case .unverified: "shield.lefthalf.filled"
+        }
+    }
+
+    private var verificationTint: Color {
+        switch verificationStatus {
+        case .approved:   .green
+        case .pending:    .yellow
+        case .rejected:   .red
+        case .unverified: .cyan
+        }
+    }
+
+    /// Unverified gets the call to action; the other states report where they are.
+    private var verificationSubtitle: String {
+        verificationStatus == .unverified
+            ? "Required for live broadcasting"
+            : verificationStatus.label
+    }
+
+    /// Only the states the creator can act on carry a badge — `pending` is
+    /// waiting on the reviewer, not on them.
+    private var showsActionBadge: Bool {
+        verificationStatus == .unverified || verificationStatus == .rejected
     }
 
     /// Summarises how filled-in the profile is, so the row is a nudge rather than
@@ -271,4 +310,7 @@ struct ProfileView: View {
     ProfileView()
         .environment(AppRouter())
         .environment(ViewerProfileService())
+        .environment(IdentityVerificationService(
+            provider: StaticIdentityVerificationProvider(status: .unverified)
+        ))
 }
