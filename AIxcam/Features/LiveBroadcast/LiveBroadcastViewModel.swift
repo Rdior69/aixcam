@@ -6,7 +6,10 @@ import Observation
 @MainActor
 final class LiveBroadcastViewModel {
     var isLive = false
-    var viewerCount = 0
+    /// nil while the real count is unknown, which is currently always. Modelled
+    /// as optional rather than 0 so the UI can say "unknown" instead of
+    /// asserting that nobody is watching.
+    var viewerCount: Int?
     var hasPermission = false
     var isPreparing = false
     var isAnimatingTip = false
@@ -32,7 +35,6 @@ final class LiveBroadcastViewModel {
     private var broadcastSession: BroadcastSession?
     private var currentStreamDocumentID: String?
     private var peakViewerCount = 0
-    private var viewerTask: Task<Void, Never>?
     private var focusTask: Task<Void, Never>?
     private var infrastructureTask: Task<Result<StreamingInfrastructureStatus, Error>, Never>?
     private var infrastructureGeneration: UInt = 0
@@ -117,7 +119,6 @@ final class LiveBroadcastViewModel {
     }
 
     func onDisappear() {
-        viewerTask?.cancel()
         focusTask?.cancel()
         infrastructureTask?.cancel()
         chatService.disconnect()
@@ -181,10 +182,11 @@ final class LiveBroadcastViewModel {
         do {
             broadcastSession = try await streamingService.startBroadcast(creatorID: creatorID)
             isLive = true
-            viewerCount = 0
+            // Stays nil until real viewer counts are wired up (IVS GetStream
+            // polling). It used to be seeded by a random walk whose peaks were
+            // written into the stream history document as if they were real.
+            viewerCount = nil
             peakViewerCount = 0
-            startViewerSimulation() // TODO: Replace with real IVS GetStream viewer count polling.
-            triggerTipPlaceholder()
             currentStreamDocumentID = await historyService.startSession(creatorID: creatorID)
         } catch {
             errorMessage = error.localizedDescription
@@ -220,8 +222,7 @@ final class LiveBroadcastViewModel {
             broadcastSession = nil
             currentStreamDocumentID = nil
             peakViewerCount = 0
-            viewerCount = 0
-            viewerTask?.cancel()
+            viewerCount = nil
             isAnimatingTip = false
             broadcastEnded = true
         } catch {
@@ -331,31 +332,12 @@ final class LiveBroadcastViewModel {
         }
     }
 
-    private func startViewerSimulation() {
-        viewerTask?.cancel()
-
-        viewerTask = Task { [weak self] in
-            guard let self else { return }
-
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(2))
-                guard !Task.isCancelled else { return }
-                guard self.isLive else { return }
-
-                let delta = Int.random(in: -2 ... 8)
-                self.viewerCount = max(0, self.viewerCount + delta)
-                if self.viewerCount > self.peakViewerCount {
-                    self.peakViewerCount = self.viewerCount
-                }
-
-                if Int.random(in: 0 ... 4) == 0 {
-                    self.triggerTipPlaceholder()
-                }
-            }
-        }
-    }
-
-    private func triggerTipPlaceholder() {
+    /// Plays the tip celebration overlay.
+    ///
+    /// Call this when a *real* tip arrives. It used to be driven by a random
+    /// timer alongside the viewer simulation, which meant the overlay fired for
+    /// tips that had never happened.
+    func showTipCelebration() {
         isAnimatingTip = true
 
         Task { [weak self] in

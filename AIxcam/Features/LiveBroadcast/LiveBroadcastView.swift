@@ -121,7 +121,10 @@ struct LiveBroadcastView: View {
 
             Spacer()
 
-            Label("\(viewModel.viewerCount)", systemImage: "person.2.fill")
+            // An em dash rather than 0: we do not know the count yet, and
+            // showing "0" to a creator who has an audience is worse than
+            // admitting we do not know.
+            Label(viewModel.viewerCount.map(String.init) ?? "—", systemImage: "person.2.fill")
                 .font(.subheadline.weight(.semibold))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
