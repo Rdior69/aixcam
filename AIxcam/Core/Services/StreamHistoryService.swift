@@ -51,7 +51,14 @@ final class StreamHistoryService {
             "fields": [
                 "creatorID": ["stringValue": creatorID],
                 "startedAt": ["timestampValue": now],
-                "peakViewers": ["integerValue": "0"]
+                "peakViewers": ["integerValue": "0"],
+                // Written explicitly as null rather than omitted. Firestore's
+                // `== null` matches only documents where the field *exists* and
+                // is null — a missing field matches no equality filter at all,
+                // so the "currently live" query in listLiveChannels would never
+                // return anything if this were left out. endSession overwrites
+                // it with a timestamp, which firestore.rules already permits.
+                "endedAt": ["nullValue": NSNull()]
             ]
         ]
 

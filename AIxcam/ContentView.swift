@@ -5,6 +5,9 @@ struct ContentView: View {
     @Environment(AppRouter.self) private var appRouter
     @State private var profileService = ViewerProfileService()
     @State private var verificationService = IdentityVerificationService()
+    // Owned here so the StoreKit transaction listener starts once, at app
+    // level, rather than being recreated each time a tip sheet is presented.
+    @State private var paymentService = PaymentService()
 
     var body: some View {
         Group {
@@ -18,6 +21,7 @@ struct ContentView: View {
         }
         .environment(profileService)
         .environment(verificationService)
+        .environment(paymentService)
         // Reload on every auth transition: signing out and back in as someone
         // else must not leave the previous person's profile or verification
         // status on screen.

@@ -340,13 +340,25 @@ exports.createChatToken = functions
  */
 exports.createStreamCredentials = functions
   .runWith({
-    secrets: ["IVS_INGEST_ENDPOINT", "IVS_STREAM_KEY", "IVS_CHAT_ROOM_ARN"],
+    secrets: [
+      "IVS_INGEST_ENDPOINT",
+      "IVS_STREAM_KEY",
+      "IVS_CHAT_ROOM_ARN",
+      "IVS_PLAYBACK_URL",
+    ],
   })
   .https.onCall(async (data, context) => {
     assertVerifiedCaller(context);
     await enforceRateLimit(context.auth.uid, "streamCreds", 20, 60);
 
     const uid = context.auth.uid;
+
+    // Identity verification is enforced HERE, not just in the app. The client
+    // gate (LiveBroadcastViewModel.canStartLive / goLive) is a UI affordance;
+    // this is the boundary. Without this check an unverified creator could call
+    // the endpoint directly, take the stream key and publish over RTMP without
+    // ever opening the app's broadcast screen.
+    await assertIdentityApproved(uid);
 
     // Per-creator channel provisioning. If a creator has their own channel stored
     // in Firestore, prefer it; otherwise fall back to the shared channel secrets.
@@ -357,12 +369,14 @@ exports.createStreamCredentials = functions
     let ingestEndpoint = process.env.IVS_INGEST_ENDPOINT;
     let streamKey = process.env.IVS_STREAM_KEY;
     let chatRoomARN = process.env.IVS_CHAT_ROOM_ARN;
+    let playbackURL = process.env.IVS_PLAYBACK_URL;
 
     if (creatorDoc.exists) {
       const d = creatorDoc.data();
       ingestEndpoint = d.ingestEndpoint || ingestEndpoint;
       streamKey = d.streamKey || streamKey;
       chatRoomARN = d.chatRoomARN || chatRoomARN;
+      playbackURL = d.playbackURL || playbackURL;
     }
 
     if (!ingestEndpoint || !streamKey) {
@@ -376,7 +390,115 @@ exports.createStreamCredentials = functions
       ingestEndpoint,
       streamKey,
       chatRoomARN: chatRoomARN || "",
+      // The client has always decoded this field; it was simply never sent, so
+      // IVSConfiguration.playbackURL was permanently empty. Not a secret — it
+      // is how a viewer watches the channel.
+      playbackURL: playbackURL || "",
     };
+  });
+
+/**
+ * Throws unless the caller's identity verification has been approved.
+ *
+ * Kept separate so every privileged creator endpoint can apply the same gate.
+ * Fails closed: a missing document, or any status other than "approved",
+ * denies access.
+ */
+async function assertIdentityApproved(uid) {
+  const doc = await admin
+    .firestore()
+    .collection("identityVerifications")
+    .doc(uid)
+    .get();
+
+  if (!doc.exists || doc.get("status") !== "approved") {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Identity verification is required before broadcasting."
+    );
+  }
+}
+
+/**
+ * Lists channels that are currently live, for the viewer-side Discover feed.
+ *
+ * Joins streams/{id} (which the client may not read for other creators) with
+ * creatorChannels/{uid} (closed to clients entirely — it holds the stream key)
+ * and viewerProfiles/{uid} (owner-read only). Returns a narrow projection:
+ * nothing sensitive, and nothing the caller could have assembled themselves.
+ * This is why discovery is a function rather than a rules relaxation.
+ */
+exports.listLiveChannels = functions
+  .runWith({ secrets: ["IVS_PLAYBACK_URL"] })
+  .https.onCall(async (data, context) => {
+    assertVerifiedCaller(context);
+    await enforceRateLimit(context.auth.uid, "listLive", 60, 60);
+
+    const db = admin.firestore();
+
+    // `endedAt == null` relies on startSession writing an explicit null. A
+    // missing field matches no equality filter in Firestore, so an omitted
+    // endedAt would make a live stream invisible here.
+    const snapshot = await db
+      .collection("streams")
+      .where("endedAt", "==", null)
+      .limit(50)
+      .get();
+
+    if (snapshot.empty) {
+      return { channels: [] };
+    }
+
+    const creatorIds = [
+      ...new Set(snapshot.docs.map((d) => d.get("creatorID")).filter(Boolean)),
+    ];
+    if (creatorIds.length === 0) {
+      return { channels: [] };
+    }
+
+    // One batched read rather than two lookups per stream.
+    const channelRefs = creatorIds.map((id) =>
+      db.collection("creatorChannels").doc(id)
+    );
+    const profileRefs = creatorIds.map((id) =>
+      db.collection("viewerProfiles").doc(id)
+    );
+    const fetched = await db.getAll(...channelRefs, ...profileRefs);
+    const channelDocs = fetched.slice(0, creatorIds.length);
+    const profileDocs = fetched.slice(creatorIds.length);
+
+    const fallbackPlaybackURL = process.env.IVS_PLAYBACK_URL || "";
+
+    const metaByCreator = new Map();
+    creatorIds.forEach((id, index) => {
+      const channel = channelDocs[index];
+      const profile = profileDocs[index];
+      metaByCreator.set(id, {
+        playbackURL:
+          (channel.exists && channel.get("playbackURL")) || fallbackPlaybackURL,
+        displayName: (profile.exists && profile.get("displayName")) || "",
+      });
+    });
+
+    const channels = snapshot.docs
+      .map((doc) => {
+        const creatorId = doc.get("creatorID");
+        const meta = metaByCreator.get(creatorId) || {};
+        const startedAt = doc.get("startedAt");
+        return {
+          streamId: doc.id,
+          creatorId: creatorId || "",
+          displayName: meta.displayName || "",
+          startedAt: startedAt ? startedAt.toDate().toISOString() : null,
+          playbackURL: meta.playbackURL || "",
+        };
+      })
+      // A channel with no playback URL cannot be watched; listing it would only
+      // produce a row that fails when tapped.
+      .filter((c) => c.creatorId && c.playbackURL)
+      .sort((a, b) => String(b.startedAt || "").localeCompare(String(a.startedAt || "")));
+
+    return { channels };
   });
 
 /**
