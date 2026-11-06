@@ -1,14 +1,14 @@
 {
   "name": "functions",
-  "engines": { "node": "18" },
+  "engines": { "node": "22" },
   "main": "index.js",
   "scripts": {
-    "deploy": "firebase deploy --only functions"
+    "deploy": "firebase deploy --only functions",
+    "lint": "node --check index.js"
   },
   "dependencies": {
-    "firebase-admin": "^11.0.0",
-    "firebase-functions": "^4.0.0",
-    "@aws-sdk/client-ivschat": "^3.0.0",
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.0.0",
     "@apple/app-store-server-library": "^1.4.0"
   }
 }

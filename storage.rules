@@ -1,0 +1,31 @@
+rules_version = '2';
+
+// The project has NO Storage bucket: the Cloud Storage for Firebase API has
+// never been enabled on `aixcam`, and the project contains zero GCS buckets.
+// (The STORAGE_BUCKET key in GoogleService-Info.plist names
+// aixcam.firebasestorage.app, but that string is emitted whether or not a bucket
+// was ever provisioned — it is not evidence that one exists.) Nothing in the app
+// uses Storage either: the iOS target links only FirebaseAuth and FirebaseCore,
+// and no Swift or Cloud Functions source references FirebaseStorage.
+//
+// So these rules are currently unenforced and undeployed — `firebase deploy
+// --only storage` would fail with no bucket to release them against. They exist
+// to pin the intended posture for whenever Storage is turned on.
+//
+// Storage egress is billed on Blaze, and an open bucket is both a data leak and
+// an unbounded invoice. Deny-by-default is the only safe posture for a bucket
+// with no intended traffic — and it is deliberately *stricter* than the default
+// ruleset Firebase installs when you first provision a bucket, which allows any
+// authenticated user to read and write every object.
+//
+// When a feature does need Storage (profile avatars are the likely first one):
+// enable the API, create the bucket, then add a narrowly scoped match above the
+// catch-all — owner-keyed by uid, with an explicit size and contentType bound —
+// and deploy. Relaxing the catch-all itself is never the right move.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

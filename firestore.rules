@@ -26,11 +26,37 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Live chat for one broadcast.
+    //
+    // Subcollection rules are evaluated independently of the parent, so this
+    // deliberately does NOT inherit the owner-only read on streams/{streamId}:
+    // chat is for the audience, and a viewer who cannot read the stream record
+    // must still be able to read and post messages.
+    //
+    // Authorship is pinned to the caller's uid rather than trusted from the
+    // payload, so nobody can post as somebody else. Messages are immutable —
+    // allowing edits would let a sender rewrite history after the fact.
+    match /streams/{streamId}/messages/{messageId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+                    && request.resource.data.senderUid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 500
+                    && request.resource.data.displayName is string
+                    && request.resource.data.displayName.size() <= 30
+                    && request.resource.data.createdAt is timestamp;
+
+      allow update, delete: if false;
+    }
+
     // Viewer profiles. The document ID is the owner's uid, so ownership is
     // structural and cannot be forged by a client-supplied field. Reads are
-    // restricted to the owner: turn-ons and fetishes are sensitive personal data
-    // and the per-field visibility settings are enforced by the backend when it
-    // projects a profile for someone else, never by an open client read.
+    // restricted to the owner: a profile carries a birthdate, gender and
+    // pronouns, and the per-field visibility settings are enforced by the
+    // backend when it projects a profile for someone else, never by an open
+    // client read.
     match /viewerProfiles/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
 
@@ -42,10 +68,10 @@ service cloud.firestore {
                             && request.resource.data.displayName.size() <= 30
                             && request.resource.data.aboutMe is string
                             && request.resource.data.aboutMe.size() <= 600
-                            && request.resource.data.turnOns is list
-                            && request.resource.data.turnOns.size() <= 20
-                            && request.resource.data.fetishes is list
-                            && request.resource.data.fetishes.size() <= 20
+                            && request.resource.data.interests is list
+                            && request.resource.data.interests.size() <= 20
+                            && request.resource.data.favoriteCategories is list
+                            && request.resource.data.favoriteCategories.size() <= 20
                             // 18+ gate. Rules cannot do calendar maths, so this
                             // bounds birthdate against request time using a fixed
                             // 18 average-Gregorian-year interval (568025136000 ms)
@@ -79,9 +105,10 @@ service cloud.firestore {
     match /creatorChannels/{uid} {
       allow read, write: if false;
     }
-    match /identityVerifications/{uid} {
-      allow read, write: if false;
-    }
+    // identityVerifications is gone: broadcasting is no longer gated on KYC.
+    // Identity is now verified at payout time by Stripe Connect, which holds
+    // the PII itself so this project never stores a government ID number. Any
+    // documents left over from the old flow are covered by the catch-all below.
     match /transactions/{txnId} {
       allow read, write: if false;
     }

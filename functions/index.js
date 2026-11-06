@@ -1,8 +1,12 @@
 const fs = require("fs");
 const path = require("path");
-const functions = require("firebase-functions");
+// Pinned to the v1 namespace explicitly. firebase-functions v6 ships both
+// generations, and v2 would change every callable's signature AND its public
+// URL (run.app rather than cloudfunctions.net) — which the six hardcoded client
+// endpoints depend on. Importing v1 by name keeps the SDK current without
+// moving the wire contract.
+const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
-const { IvschatClient, CreateChatTokenCommand } = require("@aws-sdk/client-ivschat");
 const {
   SignedDataVerifier,
   Environment,
@@ -13,10 +17,24 @@ admin.initializeApp();
 // --- App Store transaction verification config -----------------------------
 
 // Must match your app's bundle identifier and (for production) numeric App ID.
-const APPLE_BUNDLE_ID = process.env.APPLE_BUNDLE_ID || "com.aixcam.app";
+// The fallback is the real bundle id from PRODUCT_BUNDLE_IDENTIFIER: a wrong
+// value here is silent and total, because SignedDataVerifier rejects every
+// transaction whose bundle doesn't match and the purchase simply never credits.
+const APPLE_BUNDLE_ID = process.env.APPLE_BUNDLE_ID || "com.aixcam.AIxcam";
 const APPLE_APP_APPLE_ID = process.env.APPLE_APP_APPLE_ID
   ? Number(process.env.APPLE_APP_APPLE_ID)
   : undefined;
+
+// Without the numeric App ID no Production verifier can be built, so only
+// Sandbox transactions verify — dev and TestFlight pass while every real App
+// Store purchase fails. That is invisible until money is involved, so say it
+// loudly at cold start.
+if (APPLE_APP_APPLE_ID === undefined) {
+  console.warn(
+    "APPLE_APP_APPLE_ID is not set. Only Sandbox transactions will verify; " +
+      "real App Store purchases will be rejected. Set it from App Store Connect."
+  );
+}
 // Online OCSP-style revocation checks on the signing certificate chain.
 const ENABLE_ONLINE_CHECKS = true;
 
@@ -220,7 +238,32 @@ async function applyLedgerEntry(payload, direction) {
 
 // Flip to "true" in the function environment once the iOS client is wired to send
 // App Check tokens. Kept opt-in so enabling it can't silently break live clients.
+//
+// NOTE: this cannot be enabled yet. The app links only FirebaseAuth and
+// FirebaseCore, and all six client call sites post to the function URL with a
+// hand-built Authorization header rather than going through the Functions SDK,
+// so `context.app` is never populated. Turning this on today would reject 100%
+// of real traffic. See the deploy checklist in README before flipping it.
 const ENFORCE_APP_CHECK = process.env.ENFORCE_APP_CHECK === "true";
+
+// Per-function concurrency ceilings.
+//
+// On the Spark plan an abusive traffic spike hit a quota wall. On Blaze there is
+// no wall — it scales to the platform default and bills for it — so the ceiling
+// has to be stated explicitly or a scraper becomes an invoice. These are sized
+// for a pre-launch app and are deliberately low; raise them from real traffic
+// data rather than from anticipation of it.
+const MAX_INSTANCES = {
+  streamCreds: 10,
+  listLive: 20, // Viewer discovery — the most-called endpoint.
+  recordTransaction: 10,
+  appStoreNotifications: 10,
+};
+
+// Generous ceiling for a real App Store Server Notification JWS; anything larger
+// is not one. Guards the public notification endpoint from being used to make us
+// do expensive signature work on arbitrary data.
+const MAX_SIGNED_PAYLOAD_BYTES = 100 * 1024;
 
 /**
  * Rejects unauthenticated or (when enforced) un-attested callers.
@@ -277,147 +320,124 @@ async function enforceRateLimit(uid, action, limit, windowSeconds) {
 }
 
 /**
- * Mints a short-lived IVS Chat token for the signed-in user.
- */
-exports.createChatToken = functions
-  .runWith({ secrets: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"] })
-  .https.onCall(async (data, context) => {
-    assertVerifiedCaller(context);
-    await enforceRateLimit(context.auth.uid, "chatToken", 30, 60);
-
-    const { roomArn } = data;
-    if (!roomArn) {
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "roomArn is required."
-      );
-    }
-
-    // Derive the region from the room ARN so the token is minted in the same
-    // region the client connects to (arn:aws:ivschat:<region>:<account>:room/<id>).
-    // A hardcoded region here silently breaks chat when the room lives elsewhere.
-    const region = roomArn.split(":")[3] || "us-west-2";
-    const client = new IvschatClient({
-      region,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      },
-    });
-
-    const userId = context.auth.uid;
-    const displayName =
-      context.auth.token.name ||
-      (context.auth.token.email
-        ? context.auth.token.email.split("@")[0]
-        : userId);
-
-    const command = new CreateChatTokenCommand({
-      roomIdentifier: roomArn,
-      userId,
-      capabilities: ["SEND_MESSAGE"],
-      attributes: { displayName },
-      sessionDurationInMinutes: 60,
-    });
-
-    const response = await client.send(command);
-
-    return {
-      token: response.token,
-      sessionExpirationTime: response.sessionExpirationTime?.toISOString(),
-      tokenExpirationTime: response.tokenExpirationTime?.toISOString(),
-    };
-  });
-
-/**
- * Returns the IVS ingest credentials for the signed-in creator's channel.
+ * Returns the live-streaming credentials for the signed-in creator's channel,
+ * provisioning a Cloudflare Stream live input the first time they go live.
  *
- * SECURITY: The RTMP stream key is a long-lived broadcast credential and must
- * NEVER ship inside the app binary. It is stored only in the function's secret
- * environment (or a per-creator record in Firestore) and handed out here to
- * authenticated creators. The creator identity comes from the verified token,
- * never from a client-supplied field.
+ * SECURITY: the ingest URL embeds the stream key, a long-lived broadcast
+ * credential that must NEVER ship inside the app binary. It is minted here for
+ * authenticated creators only, and the creator identity comes from the verified
+ * token — never from a client-supplied field.
+ *
+ * Each creator gets their OWN live input. The AWS IVS version this replaced
+ * fell back to one shared channel when a creator had no record, which meant two
+ * creators going live at once would publish over each other.
  */
 exports.createStreamCredentials = functions
   .runWith({
-    secrets: [
-      "IVS_INGEST_ENDPOINT",
-      "IVS_STREAM_KEY",
-      "IVS_CHAT_ROOM_ARN",
-      "IVS_PLAYBACK_URL",
-    ],
+    secrets: ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_STREAM_TOKEN"],
+    maxInstances: MAX_INSTANCES.streamCreds,
   })
   .https.onCall(async (data, context) => {
     assertVerifiedCaller(context);
     await enforceRateLimit(context.auth.uid, "streamCreds", 20, 60);
 
     const uid = context.auth.uid;
-
-    // Identity verification is enforced HERE, not just in the app. The client
-    // gate (LiveBroadcastViewModel.canStartLive / goLive) is a UI affordance;
-    // this is the boundary. Without this check an unverified creator could call
-    // the endpoint directly, take the stream key and publish over RTMP without
-    // ever opening the app's broadcast screen.
-    await assertIdentityApproved(uid);
-
-    // Per-creator channel provisioning. If a creator has their own channel stored
-    // in Firestore, prefer it; otherwise fall back to the shared channel secrets.
-    // This keeps one authenticated code path whether you run one channel or many.
     const db = admin.firestore();
-    const creatorDoc = await db.collection("creatorChannels").doc(uid).get();
+    const ref = db.collection("creatorChannels").doc(uid);
+    const snapshot = await ref.get();
 
-    let ingestEndpoint = process.env.IVS_INGEST_ENDPOINT;
-    let streamKey = process.env.IVS_STREAM_KEY;
-    let chatRoomARN = process.env.IVS_CHAT_ROOM_ARN;
-    let playbackURL = process.env.IVS_PLAYBACK_URL;
-
-    if (creatorDoc.exists) {
-      const d = creatorDoc.data();
-      ingestEndpoint = d.ingestEndpoint || ingestEndpoint;
-      streamKey = d.streamKey || streamKey;
-      chatRoomARN = d.chatRoomARN || chatRoomARN;
-      playbackURL = d.playbackURL || playbackURL;
+    // Reuse the creator's existing input. Cloudflare keys are stable, so
+    // re-provisioning on every Go Live would leak live inputs and hand the
+    // creator a different key each session for no benefit.
+    if (snapshot.exists && snapshot.get("ingestURL") && snapshot.get("playbackURL")) {
+      return {
+        ingestURL: snapshot.get("ingestURL"),
+        playbackURL: snapshot.get("playbackURL"),
+      };
     }
 
-    if (!ingestEndpoint || !streamKey) {
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_STREAM_TOKEN;
+    if (!accountId || !apiToken) {
       throw new functions.https.HttpsError(
         "failed-precondition",
-        "No streaming channel is provisioned for this account."
+        "Streaming is not configured on the server."
       );
     }
 
-    return {
-      ingestEndpoint,
-      streamKey,
-      chatRoomARN: chatRoomARN || "",
-      // The client has always decoded this field; it was simply never sent, so
-      // IVSConfiguration.playbackURL was permanently empty. Not a secret — it
-      // is how a viewer watches the channel.
-      playbackURL: playbackURL || "",
-    };
-  });
+    let payload;
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            meta: { name: `aixcam-${uid}` },
+            // Recorded so a finished broadcast stays watchable. Switch to "off"
+            // if storage cost matters more than replays.
+            recording: { mode: "automatic" },
+          }),
+        }
+      );
+      payload = await response.json();
+      if (!response.ok || !payload || payload.success === false) {
+        // Cloudflare returns its reason in `errors`; logging it is the
+        // difference between a five-minute diagnosis and guessing.
+        console.error("Cloudflare live_inputs failed", response.status, JSON.stringify(payload && payload.errors));
+        throw new Error("cloudflare_rejected");
+      }
+    } catch (e) {
+      throw new functions.https.HttpsError(
+        "unavailable",
+        "Could not provision a streaming channel. Try again in a moment."
+      );
+    }
 
-/**
- * Throws unless the caller's identity verification has been approved.
- *
- * Kept separate so every privileged creator endpoint can apply the same gate.
- * Fails closed: a missing document, or any status other than "approved",
- * denies access.
- */
-async function assertIdentityApproved(uid) {
-  const doc = await admin
-    .firestore()
-    .collection("identityVerifications")
-    .doc(uid)
-    .get();
+    const input = payload.result || {};
+    const rtmps = input.rtmps || {};
+    // `rtmps.url` ends in a trailing slash ("rtmps://live.cloudflare.com:443/live/").
+    // Guard anyway: concatenating without checking is how you ship a URL with a
+    // doubled or missing separator that only fails at connect time.
+    const base = String(rtmps.url || "").replace(/\/+$/, "");
+    const streamKey = rtmps.streamKey;
 
-  if (!doc.exists || doc.get("status") !== "approved") {
-    throw new functions.https.HttpsError(
-      "permission-denied",
-      "Identity verification is required before broadcasting."
+    // Take the HLS manifest Cloudflare gives us rather than composing
+    // `https://customer-<CODE>.cloudflarestream.com/<uid>/manifest/video.m3u8`
+    // ourselves. Composing it would mean carrying the account's customer code
+    // as a third secret — a value that is not discoverable through this API and
+    // that an operator can only find by uploading a video and reading it out of
+    // a URL. One fewer secret, one fewer way to be silently wrong.
+    const playbackURL = (input.playback || {}).hls;
+
+    if (!base || !streamKey || !input.uid || !playbackURL) {
+      throw new functions.https.HttpsError(
+        "internal",
+        "Streaming provider returned an incomplete channel."
+      );
+    }
+
+    const ingestURL = `${base}/${streamKey}`;
+
+    // Persisted so listLiveChannels can join a live stream to its playback URL
+    // without the client ever seeing the stream key. This collection is closed
+    // to clients in firestore.rules for exactly that reason.
+    await ref.set(
+      {
+        provider: "cloudflare",
+        liveInputId: input.uid,
+        ingestURL,
+        playbackURL,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
     );
-  }
-}
+
+    return { ingestURL, playbackURL };
+  });
 
 /**
  * Lists channels that are currently live, for the viewer-side Discover feed.
@@ -429,7 +449,7 @@ async function assertIdentityApproved(uid) {
  * This is why discovery is a function rather than a rules relaxation.
  */
 exports.listLiveChannels = functions
-  .runWith({ secrets: ["IVS_PLAYBACK_URL"] })
+  .runWith({ maxInstances: MAX_INSTANCES.listLive })
   .https.onCall(async (data, context) => {
     assertVerifiedCaller(context);
     await enforceRateLimit(context.auth.uid, "listLive", 60, 60);
@@ -467,15 +487,12 @@ exports.listLiveChannels = functions
     const channelDocs = fetched.slice(0, creatorIds.length);
     const profileDocs = fetched.slice(creatorIds.length);
 
-    const fallbackPlaybackURL = process.env.IVS_PLAYBACK_URL || "";
-
     const metaByCreator = new Map();
     creatorIds.forEach((id, index) => {
       const channel = channelDocs[index];
       const profile = profileDocs[index];
       metaByCreator.set(id, {
-        playbackURL:
-          (channel.exists && channel.get("playbackURL")) || fallbackPlaybackURL,
+        playbackURL: (channel.exists && channel.get("playbackURL")) || "",
         displayName: (profile.exists && profile.get("displayName")) || "",
       });
     });
@@ -502,81 +519,6 @@ exports.listLiveChannels = functions
   });
 
 /**
- * Receives identity-verification PII and forwards it to a KYC provider.
- *
- * SECURITY: Raw government ID numbers must NOT be stored at rest here. Forward to
- * a compliant KYC vendor (Stripe Identity / Persona) and persist only a status.
- * This is a stub that records the *status* and drops the raw PII after handoff.
- */
-exports.submitIdentityVerification = functions.https.onCall(
-  async (data, context) => {
-    assertVerifiedCaller(context);
-    await enforceRateLimit(context.auth.uid, "idv", 5, 3600);
-
-    const { legalName, idNumber, idType, countryOfIssue, dateOfBirth } = data || {};
-    if (!legalName || !idNumber || !countryOfIssue || !dateOfBirth) {
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Missing required verification fields."
-      );
-    }
-
-    // TODO: hand `idNumber`/`legalName`/`dateOfBirth` to the KYC provider SDK here.
-    // Do NOT write these raw values to Firestore.
-
-    await admin
-      .firestore()
-      .collection("identityVerifications")
-      .doc(context.auth.uid)
-      .set(
-        {
-          status: "pending",
-          idType: idType || "unknown",
-          countryOfIssue,
-          submittedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-
-    return { status: "pending" };
-  }
-);
-
-/**
- * Returns the caller's identity-verification status.
- *
- * The client cannot read identityVerifications/{uid} directly — the rules deny it,
- * because that document also carries idType and countryOfIssue. This returns only
- * the status enum, so the app can gate broadcasting on server truth without
- * exposing anything about the document it came from.
- *
- * Absent document means the person has never submitted, which is "unverified"
- * rather than an error.
- */
-exports.getIdentityVerificationStatus = functions.https.onCall(
-  async (data, context) => {
-    assertVerifiedCaller(context);
-
-    const snapshot = await admin
-      .firestore()
-      .collection("identityVerifications")
-      .doc(context.auth.uid)
-      .get();
-
-    if (!snapshot.exists) {
-      return { status: "unverified" };
-    }
-
-    // Never reflect an unrecognised value back to the client: an unexpected
-    // status must fail closed, not be treated as permission to broadcast.
-    const allowed = ["unverified", "pending", "approved", "rejected"];
-    const status = snapshot.get("status");
-
-    return { status: allowed.includes(status) ? status : "unverified" };
-  }
-);
-
-/**
  * Records a StoreKit transaction after server-side re-verification.
  *
  * The client sends only the App Store-signed JWS. We verify that signature
@@ -585,76 +527,78 @@ exports.getIdentityVerificationStatus = functions.https.onCall(
  * is never trusted. Idempotent on the verified transaction id. Renewals and
  * refunds are reconciled out-of-band by App Store Server Notifications v2.
  */
-exports.recordTransaction = functions.https.onCall(async (data, context) => {
-  assertVerifiedCaller(context);
-  await enforceRateLimit(context.auth.uid, "txn", 60, 60);
+exports.recordTransaction = functions
+  .runWith({ maxInstances: MAX_INSTANCES.recordTransaction })
+  .https.onCall(async (data, context) => {
+    assertVerifiedCaller(context);
+    await enforceRateLimit(context.auth.uid, "txn", 60, 60);
 
-  const { signedTransaction } = data || {};
-  if (!signedTransaction || typeof signedTransaction !== "string") {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "signedTransaction (JWS) is required."
-    );
-  }
+    const { signedTransaction } = data || {};
+    if (!signedTransaction || typeof signedTransaction !== "string") {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "signedTransaction (JWS) is required."
+      );
+    }
 
-  // 1. Verify the signature against Apple's root CAs. Anything unsigned,
-  //    tampered, or from the wrong app/environment throws here.
-  let payload;
-  try {
-    payload = await verifySignedTransaction(signedTransaction);
-  } catch (e) {
-    console.error("recordTransaction verification failed:", e && e.message);
-    throw new functions.https.HttpsError(
-      "permission-denied",
-      "Transaction signature could not be verified."
-    );
-  }
+    // 1. Verify the signature against Apple's root CAs. Anything unsigned,
+    //    tampered, or from the wrong app/environment throws here.
+    let payload;
+    try {
+      payload = await verifySignedTransaction(signedTransaction);
+    } catch (e) {
+      console.error("recordTransaction verification failed:", e && e.message);
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "Transaction signature could not be verified."
+      );
+    }
 
-  // 2. Defense-in-depth: confirm the verified payload really is for this app.
-  if (payload.bundleId && payload.bundleId !== APPLE_BUNDLE_ID) {
-    throw new functions.https.HttpsError(
-      "permission-denied",
-      "Transaction is for a different application."
-    );
-  }
+    // 2. Defense-in-depth: confirm the verified payload really is for this app.
+    if (payload.bundleId && payload.bundleId !== APPLE_BUNDLE_ID) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "Transaction is for a different application."
+      );
+    }
 
-  const transactionId = String(payload.transactionId);
-  const isRefunded = payload.revocationDate != null;
+    const transactionId = String(payload.transactionId);
+    const isRefunded = payload.revocationDate != null;
 
-  // 3. Persist the verified record (idempotent), then move the ledger via the
-  //    shared helper. Both are keyed on the transaction id so repeats are no-ops.
-  const db = admin.firestore();
-  await db
-    .collection("transactions")
-    .doc(transactionId)
-    .set(
-      {
-        uid: context.auth.uid,
-        productId: payload.productId || null,
-        originalTransactionId: payload.originalTransactionId || null,
-        type: payload.type || null,
-        environment: payload.environment || null,
-        appAccountToken: payload.appAccountToken || null,
-        purchaseDate: payload.purchaseDate
-          ? admin.firestore.Timestamp.fromMillis(payload.purchaseDate)
-          : null,
-        expiresDate: payload.expiresDate
-          ? admin.firestore.Timestamp.fromMillis(payload.expiresDate)
-          : null,
-        status: isRefunded ? "refunded" : "verified",
-        verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+    // 3. Persist the verified record (idempotent), then move the ledger via the
+    //    shared helper. Both are keyed on the transaction id so repeats are no-ops.
+    const db = admin.firestore();
+    await db
+      .collection("transactions")
+      .doc(transactionId)
+      .set(
+        {
+          uid: context.auth.uid,
+          productId: payload.productId || null,
+          originalTransactionId: payload.originalTransactionId || null,
+          type: payload.type || null,
+          environment: payload.environment || null,
+          appAccountToken: payload.appAccountToken || null,
+          purchaseDate: payload.purchaseDate
+            ? admin.firestore.Timestamp.fromMillis(payload.purchaseDate)
+            : null,
+          expiresDate: payload.expiresDate
+            ? admin.firestore.Timestamp.fromMillis(payload.expiresDate)
+            : null,
+          status: isRefunded ? "refunded" : "verified",
+          verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
 
-  await applyLedgerEntry(payload, isRefunded ? "debit" : "credit");
+    await applyLedgerEntry(payload, isRefunded ? "debit" : "credit");
 
-  return {
-    status: isRefunded ? "refunded" : "verified",
-    transactionId,
-    productId: payload.productId || null,
-  };
-});
+    return {
+      status: isRefunded ? "refunded" : "verified",
+      transactionId,
+      productId: payload.productId || null,
+    };
+  });
 
 // --- App Store Server Notifications V2 -------------------------------------
 
@@ -780,35 +724,52 @@ async function handleNotification(notification) {
  * Response contract: 200 = handled (Apple stops), 5xx = retry with backoff,
  * 4xx = bad request / bad signature (Apple will not usefully retry).
  */
-exports.appStoreNotifications = functions.https.onRequest(async (req, res) => {
-  if (req.method !== "POST") {
-    res.status(405).send("Method Not Allowed");
-    return;
-  }
+exports.appStoreNotifications = functions
+  .runWith({ maxInstances: MAX_INSTANCES.appStoreNotifications })
+  .https.onRequest(async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).send("Method Not Allowed");
+      return;
+    }
 
-  const signedPayload = req.body && req.body.signedPayload;
-  if (!signedPayload || typeof signedPayload !== "string") {
-    res.status(400).send("Missing signedPayload");
-    return;
-  }
+    const signedPayload = req.body && req.body.signedPayload;
+    if (!signedPayload || typeof signedPayload !== "string") {
+      res.status(400).send("Missing signedPayload");
+      return;
+    }
 
-  let notification;
-  try {
-    notification = await verifySignedNotification(signedPayload);
-  } catch (e) {
-    console.error("ASSN signature verification failed:", e && e.message);
-    res.status(400).send("Invalid signature");
-    return;
-  }
+    // This endpoint is public and unauthenticated by design — Apple cannot carry a
+    // bearer token — so the only thing standing between a stranger and our compute
+    // is the signature check. That check is expensive: it walks a certificate chain
+    // and, with ENABLE_ONLINE_CHECKS, makes an outbound OCSP request. Rejecting
+    // anything that cannot possibly be a JWS first keeps a flood of junk from
+    // turning into billable CPU and egress.
+    if (signedPayload.length > MAX_SIGNED_PAYLOAD_BYTES) {
+      res.status(400).send("Payload too large");
+      return;
+    }
+    if (signedPayload.split(".").length !== 3) {
+      res.status(400).send("Malformed signedPayload");
+      return;
+    }
 
-  try {
-    await handleNotification(notification);
-  } catch (e) {
-    // Transient failure — let Apple retry.
-    console.error("ASSN handling error:", e);
-    res.status(500).send("Processing error");
-    return;
-  }
+    let notification;
+    try {
+      notification = await verifySignedNotification(signedPayload);
+    } catch (e) {
+      console.error("ASSN signature verification failed:", e && e.message);
+      res.status(400).send("Invalid signature");
+      return;
+    }
 
-  res.status(200).send("OK");
-});
+    try {
+      await handleNotification(notification);
+    } catch (e) {
+      // Transient failure — let Apple retry.
+      console.error("ASSN handling error:", e);
+      res.status(500).send("Processing error");
+      return;
+    }
+
+    res.status(200).send("OK");
+  });
