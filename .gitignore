@@ -155,10 +155,14 @@ temp/
 # xcuserstate should not be tracked
 *.xcuserstate
 
-# Firebase credentials — never commit
-GoogleService-Info.plist
+# Firebase credentials — never commit. The glob also covers stray backups
+# (e.g. GoogleService-Info.plist.bak-*), which carry the same project config.
+GoogleService-Info.plist*
 
-# IVS credentials — never commit the real file, only the .template is tracked
+# IVS credentials. The app no longer reads these at all — the stream key is
+# minted per-creator by the createStreamCredentials Cloud Function. Keep the
+# ignore rule as a backstop: the app target uses a synchronized folder group,
+# so any plist dropped in AIxcam/ is copied straight into the shipped bundle.
 Secrets.plist
 
 # UI test account credentials — never commit the real file, only the .template is tracked

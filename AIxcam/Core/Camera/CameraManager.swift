@@ -1,6 +1,7 @@
 import AVFoundation
 import HaishinKit
 import Observation
+import OSLog
 
 // Defined outside CameraManager so Equatable synthesis is not actor-isolated.
 enum CameraPosition: Equatable {
@@ -38,7 +39,7 @@ final class CameraManager {
     private(set) var zoomFactor: CGFloat = 1.0
     private(set) var maxZoomFactor: CGFloat = 1.01
     private(set) var isPublishing = false
-    private(set) var errorMessage: String?
+    private(set) var error: AppError?
 
     // MARK: — HaishinKit 2.x
 
@@ -60,22 +61,19 @@ final class CameraManager {
     private func startSessionAsync() async {
         // W-5: Configure AVAudioSession for live broadcast before attaching audio.
         do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .videoRecording,
-                                         options: [.allowBluetoothHFP, .defaultToSpeaker])
-            try audioSession.setActive(true)
+            try AudioSessionController.activateForBroadcast()
         } catch {
-            errorMessage = "Audio session setup failed: \(error.localizedDescription)"
+            report(CameraError.audioSessionUnavailable)
         }
 
         guard let camera = currentPosition.captureDevice else {
-            errorMessage = "Camera unavailable on this device."
+            report(CameraError.cameraUnavailable(position: currentPosition))
             return
         }
         do {
             try await mixer.attachVideo(camera)
         } catch {
-            errorMessage = error.localizedDescription
+            report(error)
             return
         }
         try? await mixer.attachAudio(AVCaptureDevice.default(for: .audio))
@@ -100,6 +98,10 @@ final class CameraManager {
         try? await mixer.attachAudio(nil)
         isSessionRunning = false
         isMixerReady = false
+        // Release the recording category. Without this the whole process stays
+        // in `.playAndRecord` after a single broadcast, and every stream the
+        // creator watches afterwards is routed as if a mic were still live.
+        AudioSessionController.deactivate()
     }
 
     // MARK: — Camera controls
@@ -107,8 +109,10 @@ final class CameraManager {
     func flipCamera() {
         currentPosition.toggle()
         guard let device = currentPosition.captureDevice else {
+            // Name the position we tried to reach, not the one we fall back to.
+            let unavailable = currentPosition
             currentPosition.toggle()
-            errorMessage = "Camera unavailable for that position."
+            report(CameraError.cameraUnavailable(position: unavailable))
             return
         }
         Task {
@@ -116,7 +120,7 @@ final class CameraManager {
                 try await mixer.attachVideo(device)
             } catch {
                 currentPosition.toggle()
-                errorMessage = error.localizedDescription
+                report(error)
             }
         }
         zoomFactor = 1.0
@@ -154,7 +158,7 @@ final class CameraManager {
             }.value
             switch result {
             case .success(let safeZ): self.zoomFactor = safeZ
-            case .failure(let error): self.errorMessage = error.localizedDescription
+            case .failure(let failure): self.report(failure)
             }
         }
     }
@@ -174,12 +178,27 @@ final class CameraManager {
                     device.exposureMode = .continuousAutoExposure
                 }
                 device.unlockForConfiguration()
-            } catch { }
+            } catch {
+                // Tap-to-focus is a refinement, not an operation the user asked
+                // for by name. A device that won't lock keeps its current focus,
+                // which is a usable outcome — log it rather than interrupt.
+                AppLog.camera.notice("focus failed: \(String(reflecting: error), privacy: .public)")
+            }
         }
     }
 
     func clearError() {
-        errorMessage = nil
+        error = nil
+    }
+
+    /// Records a failure for the UI and logs the detail.
+    ///
+    /// Every failure path in this class routes through here, so none of them
+    /// can surface a message without also leaving something in the log.
+    private func report(_ failure: Error) {
+        guard let presentable = AppError.presentable(failure) else { return }
+        error = presentable
+        AppLog.camera.error("\(presentable.diagnostic, privacy: .public)")
     }
 
     // MARK: — RTMP publishing
@@ -243,16 +262,19 @@ extension CameraManager: MTHKViewRepresentable.PreviewSource {
 enum CameraError: LocalizedError {
     case cameraUnavailable(position: CameraPosition)
     case microphoneUnavailable
+    case audioSessionUnavailable
 
     var errorDescription: String? {
         switch self {
         case .cameraUnavailable(let position):
             switch position {
-            case .front: return "Front camera is unavailable on this device."
-            case .back:  return "Back camera is unavailable on this device."
+            case .front: return String(localized: "Front camera is unavailable on this device.")
+            case .back:  return String(localized: "Back camera is unavailable on this device.")
             }
         case .microphoneUnavailable:
-            return "Microphone is unavailable on this device."
+            return String(localized: "Microphone is unavailable on this device.")
+        case .audioSessionUnavailable:
+            return String(localized: "We couldn’t set up audio. Your stream may have no sound.")
         }
     }
 }

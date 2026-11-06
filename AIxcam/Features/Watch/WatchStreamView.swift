@@ -1,13 +1,14 @@
 import AVKit
+import OSLog
 import SwiftUI
 
 /// Viewer-side playback for one live channel.
 ///
-/// Uses AVPlayer on the IVS HLS (.m3u8) URL rather than the AWS IVS Player SDK:
-/// no extra dependency, and standard HLS is enough to get the viewer path
-/// working end to end. The trade-off is latency (roughly 5-10s on a standard
-/// IVS channel vs sub-3s with the IVS SDK), which matters for interactive
-/// tipping — swapping in the IVS player later only touches `videoSurface`.
+/// Uses AVPlayer on the provider's HLS (.m3u8) manifest: no extra dependency,
+/// and standard HLS is enough for the viewer path end to end. The trade-off is
+/// latency — roughly 5-15s on plain HLS — which matters for interactive tipping.
+/// Cloudflare Stream also exposes a lower-latency WebRTC playback URL; adopting
+/// it would only touch `videoSurface`.
 struct WatchStreamView: View {
     let channel: LiveChannel
 
@@ -42,10 +43,13 @@ struct WatchStreamView: View {
             // Without this the audio keeps playing after the screen is gone.
             player?.pause()
             player = nil
+            // Hand the session back so music the viewer had playing before
+            // they opened the stream can resume.
+            AudioSessionController.deactivate()
         }
         .sheet(isPresented: $isShowingTipSheet) {
             CreatorTipView(
-                viewModel: TipOrSubscribeViewModel(
+                viewModel: CreatorTipViewModel(
                     payment: paymentService,
                     creatorID: channel.creatorID
                 )
@@ -78,12 +82,23 @@ struct WatchStreamView: View {
                 playbackFailed = true
                 return
             }
+        } catch let failure where failure.isCancellation {
+            // Leaving the screen cancels this load. That is not a dead stream,
+            // and flagging it as one would show the failure state on the way
+            // out — and again on the way back in.
+            return
         } catch {
+            AppLog.streaming.error("playback asset load failed: \(String(reflecting: error), privacy: .public)")
             playbackFailed = true
             return
         }
 
         guard !Task.isCancelled else { return }
+
+        // Must happen before play(): the default category is `.soloAmbient`,
+        // which mutes the stream whenever the ring/silent switch is on and
+        // stops it at screen lock.
+        AudioSessionController.activateForPlayback()
 
         let item = AVPlayerItem(asset: asset)
         let newPlayer = AVPlayer(playerItem: item)

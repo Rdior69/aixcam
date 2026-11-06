@@ -1,0 +1,36 @@
+{
+  "configurations" : [
+    {
+      "id" : "3B2BFB0C-26B8-4328-846C-9A9EB5EFCEFA",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:AIxcam.xcodeproj",
+      "identifier" : "28CA3EC62FB9A73700D4D552",
+      "name" : "AIxcam"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:AIxcam.xcodeproj",
+        "identifier" : "28CA3ED32FB9A73900D4D552",
+        "name" : "AIxcamTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:AIxcam.xcodeproj",
+        "identifier" : "28CA3EDD2FB9A73900D4D552",
+        "name" : "AIxcamUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

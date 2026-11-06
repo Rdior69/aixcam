@@ -1,36 +1,33 @@
 import FirebaseAuth
 import Foundation
 
-/// AWS IVS channel credentials.
+/// Live-streaming credentials for one creator's channel.
 ///
-/// SECURITY: These values are **never** shipped inside the app bundle. The RTMP
-/// stream key is a long-lived broadcast credential — embedding it in the binary
-/// lets anyone who unzips the `.app` hijack the channel. Instead, credentials are
-/// minted by an authenticated Cloud Function (`createStreamCredentials`) and handed
-/// only to signed-in creators at "Go Live" time, so the key never lives in the
-/// distributed binary and can be rotated centrally.
-struct IVSConfiguration: Sendable, Codable {
-    let ingestEndpoint: String
-    let streamKey: String
-    let chatRoomARN: String
-    /// Public IVS HLS playback URL (.m3u8) viewers use to watch this channel.
-    /// Not secret — it's how anyone with the link watches the stream.
+/// SECURITY: `ingestURL` embeds the stream key as its last path component. That
+/// key is a long-lived broadcast credential — anyone holding it can publish to
+/// the channel — so it is **never** shipped in the app bundle. It is minted by
+/// an authenticated Cloud Function (`createStreamCredentials`) and handed only
+/// to signed-in creators at "Go Live" time, which is why fetching it costs a
+/// network round trip that cannot be cached away.
+nonisolated struct StreamCredentials: Sendable, Codable {
+
+    /// Full RTMPS publish URL, stream key included, e.g.
+    /// `rtmps://live.cloudflare.com:443/live/<streamKey>`.
+    ///
+    /// The backend returns the whole URL rather than a host and key the client
+    /// recombines. Cloudflare publishes to `/live/`, AWS IVS used `/app/`, and
+    /// baking either path into the client is how you end up with an app that
+    /// can only ever talk to one vendor. HaishinKit takes a complete URL and
+    /// splits the trailing path component off as the stream name itself, so
+    /// there is nothing left for the client to assemble.
+    let ingestURL: String
+
+    /// Public HLS manifest viewers watch. Not secret — it is how anyone with
+    /// the link watches the channel.
     let playbackURL: String
 
-    init(ingestEndpoint: String, streamKey: String, chatRoomARN: String, playbackURL: String = "") {
-        self.ingestEndpoint = ingestEndpoint
-        self.streamKey = streamKey
-        self.chatRoomARN = chatRoomARN
-        self.playbackURL = playbackURL
-    }
-
-    var rtmpsURL: String {
-        "rtmps://\(ingestEndpoint):443/app/\(streamKey)"
-    }
-
-    var isPlaceholder: Bool {
-        ingestEndpoint.isEmpty || streamKey.isEmpty
-    }
+    /// True before the backend has provisioned a channel for this creator.
+    var isPlaceholder: Bool { ingestURL.isEmpty }
 }
 
 /// Errors from the stream-credentials backend.
@@ -49,23 +46,23 @@ enum StreamCredentialsError: LocalizedError {
         case .decodingFailed:
             return String(localized: "We couldn’t read the streaming service response.")
         case .network(let error):
-            return error.localizedDescription
+            return AppError(error).message
         }
     }
 }
 
-/// Supplies IVS credentials to the streaming layer. Abstracted so previews and
+/// Supplies credentials to the streaming layer. Abstracted so previews and
 /// unit tests can inject static values without hitting the network.
 protocol StreamCredentialsProviding: Sendable {
-    func fetchCredentials() async throws -> IVSConfiguration
+    func fetchCredentials() async throws -> StreamCredentials
 }
 
-/// Fetches short-lived IVS credentials from the backend Cloud Function.
+/// Fetches credentials from the backend Cloud Function.
 ///
 /// The function derives the creator identity from the verified Firebase ID token
-/// (never from a client-supplied value) and returns the ingest endpoint, stream
-/// key, and chat room ARN for that creator's channel.
-final class FirebaseStreamCredentialsService: StreamCredentialsProviding {
+/// (never from a client-supplied value) and returns the ingest and playback URLs
+/// for that creator's own channel.
+final class FirebaseStreamCredentialsProvider: StreamCredentialsProviding {
 
     private let endpoint: URL
     private let session: URLSession
@@ -78,7 +75,7 @@ final class FirebaseStreamCredentialsService: StreamCredentialsProviding {
         self.session = session
     }
 
-    func fetchCredentials() async throws -> IVSConfiguration {
+    func fetchCredentials() async throws -> StreamCredentials {
         guard let user = Auth.auth().currentUser else {
             throw StreamCredentialsError.notAuthenticated
         }
@@ -94,7 +91,9 @@ final class FirebaseStreamCredentialsService: StreamCredentialsProviding {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = try JSONSerialization.data(withJSONObject: ["data": [:]])
-        request.timeoutInterval = 15
+        // Generous: a creator's first call provisions a live input with
+        // Cloudflare before it can answer, which is slower than a cached fetch.
+        request.timeoutInterval = 30
 
         let data: Data
         let response: URLResponse
@@ -112,7 +111,7 @@ final class FirebaseStreamCredentialsService: StreamCredentialsProviding {
         }
 
         // Callable functions wrap the payload in a top-level "result" object.
-        struct Envelope: Decodable { let result: IVSConfiguration }
+        struct Envelope: Decodable { let result: StreamCredentials }
         do {
             return try JSONDecoder().decode(Envelope.self, from: data).result
         } catch {
@@ -122,18 +121,14 @@ final class FirebaseStreamCredentialsService: StreamCredentialsProviding {
 }
 
 /// Static provider for Xcode Previews and unit tests — no network, no secrets.
-struct StaticStreamCredentialsProvider: StreamCredentialsProviding {
-    let configuration: IVSConfiguration
+nonisolated struct StaticStreamCredentialsProvider: StreamCredentialsProviding {
+    let credentials: StreamCredentials
 
-    init(configuration: IVSConfiguration = IVSConfiguration(
-        ingestEndpoint: "",
-        streamKey: "",
-        chatRoomARN: "arn:aws:ivschat:us-east-1:000000000000:room/mock-preview"
-    )) {
-        self.configuration = configuration
+    init(credentials: StreamCredentials = StreamCredentials(ingestURL: "", playbackURL: "")) {
+        self.credentials = credentials
     }
 
-    func fetchCredentials() async throws -> IVSConfiguration {
-        configuration
+    func fetchCredentials() async throws -> StreamCredentials {
+        credentials
     }
 }

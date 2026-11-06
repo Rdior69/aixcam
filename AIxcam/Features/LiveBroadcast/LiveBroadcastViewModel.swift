@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Observation
+import OSLog
 
 @Observable
 @MainActor
@@ -13,12 +14,9 @@ final class LiveBroadcastViewModel {
     var hasPermission = false
     var isPreparing = false
     var isAnimatingTip = false
-    var errorMessage: String?
+    var error: AppError?
     var focusIndicatorPoint: CGPoint?
     var isPrivacyShieldVisible = false
-    /// Server-sourced. Starts `unverified` so Go Live stays disabled until the
-    /// backend has actually confirmed otherwise — this must fail closed.
-    private(set) var verificationStatus: IdentityVerificationStatus = .unverified
     var infrastructureStatus = StreamingInfrastructureStatus(
         isReady: false,
         securityLevel: .initializing,
@@ -28,9 +26,8 @@ final class LiveBroadcastViewModel {
     let cameraManager: CameraManager
     private(set) var chatService = ChatService()
 
-    private let streamingService: StreamingService
-    private let verificationProvider: IdentityVerificationProviding
-    private let historyService = StreamHistoryService()
+    private let streamingService: StreamingServicing
+    private let historyService: StreamHistoryService
     private let creatorID: String
     private var broadcastSession: BroadcastSession?
     private var currentStreamDocumentID: String?
@@ -39,8 +36,21 @@ final class LiveBroadcastViewModel {
     private var infrastructureTask: Task<Result<StreamingInfrastructureStatus, Error>, Never>?
     private var infrastructureGeneration: UInt = 0
 
-    var displayError: String? {
-        errorMessage ?? cameraManager.errorMessage
+    /// The single error the screen presents.
+    ///
+    /// Two sources feed it. The camera's is shown only when the broadcast
+    /// itself has nothing to report, so a "can't go live" message is never
+    /// buried under a stale focus or zoom failure. Clearing it clears both —
+    /// otherwise dismissing one alert immediately presents the other.
+    var displayedError: AppError? {
+        get { error ?? cameraManager.error }
+        set {
+            if newValue == nil {
+                clearError()
+            } else {
+                error = newValue
+            }
+        }
     }
 
     var chatMessages: [ChatMessage] { chatService.messages }
@@ -49,15 +59,17 @@ final class LiveBroadcastViewModel {
     init(
         creatorID: String,
         cameraManager: CameraManager? = nil,
-        streamingService: StreamingService? = nil,
-        verificationProvider: IdentityVerificationProviding = FirebaseIdentityVerificationProvider()
+        streamingService: StreamingServicing? = nil,
+        // Optional rather than a default value because StreamHistoryService is
+        // @MainActor, and default arguments are evaluated outside any actor.
+        historyService: StreamHistoryService? = nil
     ) {
         self.creatorID = creatorID
-        self.verificationProvider = verificationProvider
+        self.historyService = historyService ?? StreamHistoryService()
         let cm = cameraManager ?? CameraManager()
         self.cameraManager = cm
-        self.streamingService = streamingService ?? IVSStreamingService(
-            credentialsProvider: FirebaseStreamCredentialsService(),
+        self.streamingService = streamingService ?? LiveStreamingService(
+            credentialsProvider: FirebaseStreamCredentialsProvider(),
             cameraManager: cm
         )
     }
@@ -78,22 +90,9 @@ final class LiveBroadcastViewModel {
 
     var canStartLive: Bool {
         hasPermission
-        && isIdentityVerified
         && infrastructureStatus.isReady
         && !isPreparing
         && !isPrivacyShieldVisible
-    }
-
-    /// Broadcasting is gated on identity verification: this is an 18+ platform,
-    /// so an unverified account must not be able to put a camera feed out.
-    var isIdentityVerified: Bool {
-        verificationStatus.allowsBroadcasting
-    }
-
-    /// Why Go Live is unavailable on verification grounds, or nil when it isn't.
-    /// Surfaced in the UI so a disabled button is never unexplained.
-    var verificationBlockedReason: String? {
-        verificationStatus.broadcastBlockedReason
     }
 
     var canEndLive: Bool {
@@ -101,21 +100,8 @@ final class LiveBroadcastViewModel {
     }
 
     func onAppear() async {
-        await refreshVerificationStatus()
         await requestPermissionsAndPrepareCamera()
         await ensureInfrastructurePrepared(forceRefresh: false)
-    }
-
-    /// Re-read the gate from the backend. Called on appear and on foreground, so
-    /// a creator approved while the app was backgrounded isn't left locked out.
-    func refreshVerificationStatus() async {
-        do {
-            verificationStatus = try await verificationProvider.fetchStatus()
-        } catch {
-            // Leave the last known status in place. A network failure must not
-            // promote an unverified creator, and must not demote a verified one
-            // mid-session either.
-        }
     }
 
     func onDisappear() {
@@ -147,7 +133,6 @@ final class LiveBroadcastViewModel {
         // stale) hasPermission flag: a user may have just granted access in
         // Settings, in which case we must clear the overlay and start the camera.
         Task {
-            await refreshVerificationStatus()
             await requestPermissionsAndPrepareCamera()
             await ensureInfrastructurePrepared(forceRefresh: false)
         }
@@ -161,17 +146,8 @@ final class LiveBroadcastViewModel {
         guard hasPermission else { return }
         guard !isLive else { return }
 
-        // Re-check the gate here, not just in canStartLive. A disabled button is
-        // a UI affordance, not an authorisation boundary — goLive() is reachable
-        // from anywhere that holds the view model.
-        await refreshVerificationStatus()
-        guard isIdentityVerified else {
-            errorMessage = verificationBlockedReason
-            return
-        }
-
         guard infrastructureStatus.isReady else {
-            errorMessage = "Secure streaming infrastructure is still initializing."
+            error = AppError(message: String(localized: "Secure streaming infrastructure is still initializing."))
             await ensureInfrastructurePrepared(forceRefresh: false)
             return
         }
@@ -182,22 +158,27 @@ final class LiveBroadcastViewModel {
         do {
             broadcastSession = try await streamingService.startBroadcast(creatorID: creatorID)
             isLive = true
-            // Stays nil until real viewer counts are wired up (IVS GetStream
-            // polling). It used to be seeded by a random walk whose peaks were
-            // written into the stream history document as if they were real.
+            // Stays nil until real viewer counts are wired up (Cloudflare
+            // Stream's live-input analytics). It used to be seeded by a random
+            // walk whose peaks were written into the stream history document as
+            // if they were real.
             viewerCount = nil
             peakViewerCount = 0
             currentStreamDocumentID = await historyService.startSession(creatorID: creatorID)
         } catch {
-            errorMessage = error.localizedDescription
+            report(error)
             return
         }
 
         // Connect to chat after broadcast starts — failure doesn't abort the stream.
         do {
-            try await chatService.connect(roomARN: streamingService.chatRoomARN)
+            guard let streamID = currentStreamDocumentID else { return }
+            try await chatService.connect(streamID: streamID)
         } catch {
-            // Chat is non-critical; swallow the error silently.
+            // Chat is non-critical: the creator is live and their audience can
+            // watch. Interrupting a broadcast that just started, over a side
+            // channel, would cost more than the missing chat does.
+            AppLog.streaming.error("chat connect failed: \(String(reflecting: error), privacy: .public)")
         }
     }
 
@@ -226,7 +207,7 @@ final class LiveBroadcastViewModel {
             isAnimatingTip = false
             broadcastEnded = true
         } catch {
-            errorMessage = error.localizedDescription
+            report(error)
         }
 
         if broadcastEnded, let docID = savedDocumentID {
@@ -262,16 +243,25 @@ final class LiveBroadcastViewModel {
         }
     }
 
+    /// Clears both sources behind `displayedError`, so one dismissal doesn't
+    /// immediately re-present the other one.
     func clearError() {
-        errorMessage = nil
+        error = nil
         cameraManager.clearError()
+    }
+
+    /// Records a failure for the UI and logs the detail.
+    private func report(_ failure: Error) {
+        guard let presentable = AppError.presentable(failure) else { return }
+        error = presentable
+        AppLog.streaming.error("\(presentable.diagnostic, privacy: .public)")
     }
 
     private func requestPermissionsAndPrepareCamera() async {
         hasPermission = await PermissionManager.requestCameraAndMicrophoneAccess()
 
         guard hasPermission else {
-            errorMessage = "Camera and microphone access are required to go live."
+            error = AppError(message: String(localized: "Camera and microphone access are required to go live."))
             return
         }
 
@@ -322,13 +312,17 @@ final class LiveBroadcastViewModel {
         switch result {
         case .success(let status):
             infrastructureStatus = status
-        case .failure:
+        case .failure(let failure):
             infrastructureStatus = StreamingInfrastructureStatus(
                 isReady: false,
                 securityLevel: .degraded,
                 description: "Infrastructure unavailable"
             )
-            errorMessage = "Could not initialize secure streaming infrastructure."
+            AppLog.streaming.error("infrastructure prepare failed: \(String(reflecting: failure), privacy: .public)")
+            // Deliberately not the underlying error's wording: the recovery the
+            // creator needs is "retry", which the degraded status already
+            // offers, and transport detail here would only confuse that.
+            error = AppError(message: String(localized: "Could not initialize secure streaming infrastructure."))
         }
     }
 

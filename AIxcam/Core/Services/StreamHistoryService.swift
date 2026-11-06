@@ -1,6 +1,6 @@
-import FirebaseAuth
 import Foundation
 import Observation
+import OSLog
 
 struct StreamRecord: Identifiable {
     let id: String
@@ -38,8 +38,32 @@ final class StreamHistoryService {
     private(set) var recentStreams: [StreamRecord] = []
     private(set) var isLoading = false
 
-    private static let projectID = "aixcam"
-    private static let baseURL = "https://firestore.googleapis.com/v1/projects/\(projectID)/databases/(default)/documents"
+    private nonisolated static let projectID = "aixcam"
+
+    // nonisolated so it can be evaluated as a default argument of `init`, which
+    // runs outside the main actor even though the class is @MainActor.
+    nonisolated static let defaultBaseURL = "https://firestore.googleapis.com/v1/projects/\(projectID)/databases/(default)/documents"
+
+    // Held as a String rather than a URL because `fetchHistory` appends the
+    // `:runQuery` verb, which is a suffix on the collection path and not a
+    // path component — `URL.appending(path:)` would percent-encode the colon.
+    private let baseURL: String
+    private let session: URLSession
+    private let authTokenProvider: AuthTokenProviding
+
+    /// Everything that touches the outside world is injected so the write paths
+    /// below are reachable from a test: without this, `startSession` returned
+    /// nil the moment there was no signed-in user and none of the request
+    /// construction, status checking or parsing ever ran.
+    init(
+        baseURL: String = StreamHistoryService.defaultBaseURL,
+        session: URLSession = .shared,
+        authTokenProvider: AuthTokenProviding = FirebaseAuthTokenProvider()
+    ) {
+        self.baseURL = baseURL
+        self.session = session
+        self.authTokenProvider = authTokenProvider
+    }
 
     /// Creates a new stream record in Firestore. Returns the document ID on success, nil on failure.
     func startSession(creatorID: String) async -> String? {
@@ -62,22 +86,23 @@ final class StreamHistoryService {
             ]
         ]
 
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/streams?documentId=\(documentID)")!)
+        var request = URLRequest(url: URL(string: "\(baseURL)/streams?documentId=\(documentID)")!)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (_, response) = try await session.data(for: request)
             // URLSession does not throw on HTTP 4xx/5xx, so a permission-denied
             // or malformed write would otherwise be reported as success.
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                print("[StreamHistoryService] startSession non-success status")
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                AppLog.streaming.error("startSession: HTTP \(status, privacy: .public)")
                 return nil
             }
         } catch {
-            print("[StreamHistoryService] startSession failed: \(error)")
+            AppLog.streaming.error("startSession failed: \(String(reflecting: error), privacy: .public)")
             return nil
         }
         return documentID
@@ -97,15 +122,15 @@ final class StreamHistoryService {
 
         // updateMask ensures only these two fields are written; creatorID/startedAt are preserved.
         let mask = "updateMask.fieldPaths=endedAt&updateMask.fieldPaths=peakViewers"
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/streams/\(documentID)?\(mask)")!)
+        var request = URLRequest(url: URL(string: "\(baseURL)/streams/\(documentID)?\(mask)")!)
         request.httpMethod = "PATCH"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        guard let (_, response) = try? await URLSession.shared.data(for: request),
+        guard let (_, response) = try? await session.data(for: request),
               let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            print("[StreamHistoryService] endSession failed for \(documentID)")
+            AppLog.streaming.error("endSession failed for \(documentID, privacy: .public)")
             return
         }
     }
@@ -133,13 +158,13 @@ final class StreamHistoryService {
             ]
         ]
 
-        var request = URLRequest(url: URL(string: "\(Self.baseURL):runQuery")!)
+        var request = URLRequest(url: URL(string: "\(baseURL):runQuery")!)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = try? JSONSerialization.data(withJSONObject: query)
 
-        guard let (data, _) = try? await URLSession.shared.data(for: request),
+        guard let (data, _) = try? await session.data(for: request),
               let results = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return }
 
         recentStreams = results.compactMap { Self.parseRecord($0) }
@@ -195,6 +220,6 @@ final class StreamHistoryService {
     }
 
     private func currentIDToken() async -> String? {
-        try? await Auth.auth().currentUser?.getIDToken()
+        await authTokenProvider.currentIDToken()
     }
 }

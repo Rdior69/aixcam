@@ -169,9 +169,6 @@ struct MockStreamingServiceTests {
         }
     }
 
-    @Test func chatRoomARN_isNonEmpty() {
-        #expect(!MockStreamingService().chatRoomARN.isEmpty)
-    }
 }
 
 // MARK: - Error Descriptions
@@ -190,7 +187,7 @@ struct ErrorDescriptionTests {
     }
 
     @Test func chatError_allCasesHaveDescriptions() {
-        let cases: [ChatError] = [.notAuthenticated, .tokenFetchFailed]
+        let cases: [ChatError] = [.notAuthenticated, .sendFailed]
         for error in cases {
             #expect(error.errorDescription?.isEmpty == false)
         }
@@ -211,40 +208,76 @@ struct TransportSecurityLevelTests {
 
 // MARK: - ChatService parsing
 
+// @MainActor because ChatService is, which isolates its static members too —
+// a nonisolated suite cannot call them. See the MainActor default-isolation
+// note: the target builds with main-actor isolation by default.
 @Suite("ChatService")
 @MainActor
 struct ChatServiceTests {
 
-    @Test func region_extractedFromARN() {
-        #expect(ChatService.region(from: "arn:aws:ivschat:us-east-1:123456789012:room/abc") == "us-east-1")
-        #expect(ChatService.region(from: "arn:aws:ivschat:eu-west-2:1:room/x") == "eu-west-2")
+    /// Shapes a Firestore REST document the way the messages subcollection
+    /// returns one, so the parser is exercised against the real wire format.
+    private func document(
+        name: String = "projects/p/databases/(default)/documents/streams/s1/messages/m1",
+        text: String? = "hello",
+        displayName: String? = "Alice",
+        createdAt: String? = "2026-01-01T00:00:00Z"
+    ) -> [String: Any] {
+        var fields: [String: Any] = [:]
+        if let text { fields["text"] = ["stringValue": text] }
+        if let displayName { fields["displayName"] = ["stringValue": displayName] }
+        if let createdAt { fields["createdAt"] = ["timestampValue": createdAt] }
+        return ["name": name, "fields": fields]
     }
 
-    @Test func region_malformedARN_fallsBackToUSEast1() {
-        #expect(ChatService.region(from: "not-an-arn") == "us-east-1")
+    @Test func parse_fullDocument_mapsEveryField() {
+        let message = ChatService.parse(document: document())
+        #expect(message?.id == "m1")
+        #expect(message?.sender == "Alice")
+        #expect(message?.text == "hello")
+        #expect(message?.timestamp == ISO8601DateFormatter().date(from: "2026-01-01T00:00:00Z"))
     }
 
-    @Test func parseMessage_validMessage_usesDisplayName() {
-        let json = """
-        {"Type":"MESSAGE","Id":"m1","Content":"hello","SendTime":"2026-01-01T00:00:00Z",\
-        "Sender":{"UserId":"u1","Attributes":{"displayName":"Alice"}}}
-        """
-        let msg = ChatService.parseMessage(json)
-        #expect(msg?.id == "m1")
-        #expect(msg?.sender == "Alice")
-        #expect(msg?.text == "hello")
+    /// The document ID is the last path component of the REST `name`, not a
+    /// field — getting this wrong would make every message collide on ID and
+    /// break de-duplication.
+    @Test func parse_idIsTheLastPathComponentOfName() {
+        let message = ChatService.parse(
+            document: document(name: "projects/p/databases/(default)/documents/streams/s9/messages/xyz-123")
+        )
+        #expect(message?.id == "xyz-123")
     }
 
-    @Test func parseMessage_noDisplayName_fallsBackToUserId() {
-        let json = """
-        {"Type":"MESSAGE","Id":"m2","Content":"hi","Sender":{"UserId":"u2"}}
-        """
-        #expect(ChatService.parseMessage(json)?.sender == "u2")
+    @Test func parse_missingDisplayName_fallsBackToViewer() {
+        #expect(ChatService.parse(document: document(displayName: nil))?.sender == "Viewer")
     }
 
-    @Test func parseMessage_nonMessageEvent_returnsNil() {
-        let json = #"{"Type":"CONNECT","Id":"c1"}"#
-        #expect(ChatService.parseMessage(json) == nil)
+    @Test func parse_emptyDisplayName_fallsBackToViewer() {
+        #expect(ChatService.parse(document: document(displayName: ""))?.sender == "Viewer")
+    }
+
+    /// Node's toISOString() emits fractional seconds; the plain form has none.
+    @Test func parse_acceptsBothISO8601Forms() {
+        #expect(ChatService.parse(document: document(createdAt: "2026-01-01T00:00:00.123Z")) != nil)
+        #expect(ChatService.parse(document: document(createdAt: "2026-01-01T00:00:00Z")) != nil)
+    }
+
+    @Test func parse_missingText_returnsNil() {
+        #expect(ChatService.parse(document: document(text: nil)) == nil)
+    }
+
+    @Test func parse_emptyText_returnsNil() {
+        #expect(ChatService.parse(document: document(text: "")) == nil)
+    }
+
+    @Test func parse_missingFields_returnsNil() {
+        #expect(ChatService.parse(document: ["name": "a/b/c"]) == nil)
+    }
+
+    /// The client clamp must match the ceiling firestore.rules enforces, or
+    /// over-long messages fail server-side as an unexplained rejected send.
+    @Test func outgoingLengthCapMatchesTheSecurityRules() {
+        #expect(ChatService.maxOutgoingMessageLength == 500)
     }
 }
 
@@ -401,18 +434,18 @@ struct ViewerProfileValidationTests {
 
     @Test func tooManyTags_isRejected() {
         var profile = adult()
-        profile.fetishes = (0...ViewerProfile.maxTags).map { "tag\($0)" }
+        profile.favoriteCategories = (0...ViewerProfile.maxTags).map { "tag\($0)" }
         #expect(profile.validationErrors(on: today).contains(.tooManyTags))
     }
 
     /// Interests are optional on purpose — nobody is blocked from using the app
-    /// for declining to list a kink.
+    /// for declining to list interests.
     @Test func isComplete_doesNotRequireInterestsOrAboutMe() {
         var profile = ViewerProfile()
         profile.displayName = "Sam"
         profile.birthdate = Calendar.current.date(byAdding: .year, value: -22, to: Date())
         #expect(profile.isComplete)
-        #expect(profile.turnOns.isEmpty)
+        #expect(profile.interests.isEmpty)
         #expect(profile.aboutMe.isEmpty)
     }
 
@@ -478,11 +511,11 @@ struct ViewerProfileLabelTests {
 struct ViewerProfileTagTests {
 
     @Test func normalizeTags_trimsAndDropsBlanks() {
-        #expect(ViewerProfile.normalizeTags(["  Latex ", "", "   "]) == ["Latex"])
+        #expect(ViewerProfile.normalizeTags(["  Gaming ", "", "   "]) == ["Gaming"])
     }
 
     @Test func normalizeTags_removesCaseInsensitiveDuplicatesKeepingFirst() {
-        #expect(ViewerProfile.normalizeTags(["Latex", "latex", "LATEX"]) == ["Latex"])
+        #expect(ViewerProfile.normalizeTags(["Gaming", "gaming", "GAMING"]) == ["Gaming"])
     }
 
     @Test func normalizeTags_capsAtMaxTags() {
@@ -502,7 +535,7 @@ struct ViewerProfileTagTests {
     @Test func sanitized_isIdempotent() {
         var profile = ViewerProfile()
         profile.displayName = "  Sam  "
-        profile.turnOns = ["Flirting", "flirting", " Roleplay "]
+        profile.interests = ["Gaming", "gaming", " Music "]
         let once = profile.sanitized()
         #expect(once.sanitized() == once)
     }
@@ -521,10 +554,10 @@ struct ViewerProfileServiceTests {
         profile.gender = .nonBinary
         profile.pronouns = .theyThem
         profile.aboutMe = "Here to watch."
-        profile.turnOns = ["Flirting", "Roleplay"]
-        profile.fetishes = ["Latex"]
-        profile.turnOnsVisibility = .everyone
-        profile.fetishesVisibility = .onlyMe
+        profile.interests = ["Gaming", "Music"]
+        profile.favoriteCategories = ["Just Chatting"]
+        profile.interestsVisibility = .everyone
+        profile.favoriteCategoriesVisibility = .onlyMe
         return profile
     }
 
@@ -537,10 +570,10 @@ struct ViewerProfileServiceTests {
         #expect(decoded.gender == .nonBinary)
         #expect(decoded.pronouns == .theyThem)
         #expect(decoded.aboutMe == original.aboutMe)
-        #expect(decoded.turnOns == original.turnOns)
-        #expect(decoded.fetishes == original.fetishes)
-        #expect(decoded.turnOnsVisibility == .everyone)
-        #expect(decoded.fetishesVisibility == .onlyMe)
+        #expect(decoded.interests == original.interests)
+        #expect(decoded.favoriteCategories == original.favoriteCategories)
+        #expect(decoded.interestsVisibility == .everyone)
+        #expect(decoded.favoriteCategoriesVisibility == .onlyMe)
         #expect(decoded.birthdate == original.birthdate)
     }
 
@@ -575,12 +608,12 @@ struct ViewerProfileServiceTests {
             "displayName": ["stringValue": "Sam"],
             "gender": ["stringValue": "not-a-real-gender"],
             "pronouns": ["stringValue": "zzz"],
-            "turnOnsVisibility": ["stringValue": "nope"]
+            "interestsVisibility": ["stringValue": "nope"]
         ]]
         let decoded = try #require(ViewerProfileService.decode(document: document))
         #expect(decoded.gender == nil)
         #expect(decoded.pronouns == nil)
-        #expect(decoded.turnOnsVisibility == .everyone) // falls back to the default
+        #expect(decoded.interestsVisibility == .everyone) // falls back to the default
     }
 }
 

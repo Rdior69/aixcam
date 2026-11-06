@@ -1,4 +1,3 @@
-import FirebaseAuth
 import Foundation
 import StoreKit
 
@@ -30,7 +29,9 @@ enum PaymentError: LocalizedError {
         case .missingCreator:
             return String(localized: "This payment isn’t linked to a creator, so nothing was charged.")
         case .unknown(let error):
-            return error.localizedDescription
+            // Through AppError rather than `localizedDescription`: StoreKit and
+            // network errors here are rarely phrased for a buyer to read.
+            return AppError(error).message
         }
     }
 }
@@ -80,14 +81,30 @@ final class PaymentService {
     @ObservationIgnored
     // nonisolated(unsafe) so deinit can cancel this without MainActor
     // .assumeIsolated, which would crash if deinit ran off the main thread.
-    // Safe because the task is written once in init and read once in deinit,
+    // Safe because the task is written once in start() and read once in deinit,
     // with no concurrent access. Mirrors AppRouter's auth listener handle.
     nonisolated(unsafe) private var updatesTask: Task<Void, Never>?
 
+    @ObservationIgnored
+    private let backend: PaymentBackend
+
     // MARK: - Lifecycle
 
-    init() {
-        // Start listening BEFORE any purchase can occur so no transaction is missed.
+    /// Constructing the service does nothing observable. StoreKit work is
+    /// deferred to `start()` so a test (or a preview) can hold a
+    /// `PaymentService` without a transaction listener and a product fetch
+    /// firing off the moment it is initialised.
+    init(backend: PaymentBackend = FirebasePaymentBackend()) {
+        self.backend = backend
+    }
+
+    /// Begins listening for transactions and loads the catalogue. Idempotent,
+    /// so it is safe to call from a SwiftUI `.task` that may re-run.
+    ///
+    /// Call this once, as early as possible: the listener must be running
+    /// BEFORE any purchase can occur so no transaction is missed.
+    func start() {
+        guard updatesTask == nil else { return }
         updatesTask = listenForTransactions()
 
         Task {
@@ -136,7 +153,7 @@ final class PaymentService {
         if let creatorID {
             let trimmed = creatorID.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { throw PaymentError.missingCreator }
-            try await registerAttribution(token: token, creatorID: trimmed)
+            try await backend.registerAttribution(token: token, creatorID: trimmed)
         }
 
         let options: Set<Product.PurchaseOption> = [.appAccountToken(token)]
@@ -151,7 +168,7 @@ final class PaymentService {
         switch result {
         case .success(let verification):
             let transaction = try checkVerified(verification)
-            await deliver(transaction, jws: verification.jwsRepresentation)
+            await deliver(jws: verification.jwsRepresentation)
             await transaction.finish()
             return .success(transaction)
 
@@ -207,7 +224,7 @@ final class PaymentService {
                 // End the loop once the service is deallocated.
                 guard let self else { break }
                 guard let transaction = try? self.checkVerified(update) else { continue }
-                await self.deliver(transaction, jws: update.jwsRepresentation)
+                await self.deliver(jws: update.jwsRepresentation)
                 await transaction.finish()
             }
         }
@@ -217,94 +234,13 @@ final class PaymentService {
 
     /// Grant the purchase locally and inform the backend so the creator ledger
     /// is credited. Backend should re-verify the signed transaction server-side.
-    private func deliver(_ transaction: Transaction, jws: String) async {
+    private func deliver(jws: String) async {
         await refreshEntitlements()
         // Forward the signed transaction to the backend for authoritative
         // server-side verification. Local entitlements drive UI only; creator
         // payouts and durable subscription state MUST be decided server-side from
         // this JWS (and App Store Server Notifications), never from the client's word.
-        await forwardToBackend(transaction, jws: jws)
-    }
-
-    /// Forwards the App Store-signed transaction (JWS) to our backend so it can
-    /// re-verify with Apple and credit the creator ledger. Failures are non-fatal
-    /// to the local purchase — the backend also reconciles via App Store Server
-    /// Notifications, so a dropped call here is eventually corrected.
-    private func forwardToBackend(_ transaction: Transaction, jws: String) async {
-        guard let user = Auth.auth().currentUser,
-              let idToken = try? await user.getIDToken() else { return }
-
-        let url = URL(string: "https://us-central1-aixcam.cloudfunctions.net/recordTransaction")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 15
-
-        let body: [String: Any] = [
-            "data": [
-                // The signed JWS (compact JWT) is the tamper-evident source of truth
-                // the backend re-verifies against Apple's public keys. Transaction
-                // details (id, product) are read from the verified payload server-side,
-                // so nothing here is trusted beyond the signature.
-                "signedTransaction": jws
-            ]
-        ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else { return }
-        request.httpBody = httpBody
-
-        _ = try? await URLSession.shared.data(for: request)
-    }
-
-    /// Records the buyer→creator mapping for a purchase so the backend can
-    /// attribute the verified transaction to the correct creator's ledger.
-    ///
-    /// The document id is the lowercased token because Apple normalizes
-    /// `appAccountToken` to lowercase in the signed transaction payload, and the
-    /// backend looks the mapping up by that value.
-    /// Throws rather than returning: the caller must not charge if this fails.
-    private func registerAttribution(token: UUID, creatorID: String) async throws {
-        guard let user = Auth.auth().currentUser,
-              let idToken = try? await user.getIDToken() else {
-            throw PaymentError.attributionFailed
-        }
-
-        let documentID = token.uuidString.lowercased()
-        let base = "https://firestore.googleapis.com/v1/projects/aixcam/databases/(default)/documents"
-        guard let url = URL(string: "\(base)/attributions?documentId=\(documentID)") else {
-            throw PaymentError.attributionFailed
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
-        request.timeoutInterval = 15
-
-        let body: [String: Any] = [
-            "fields": [
-                "creatorId": ["stringValue": creatorID],
-                "buyerUid": ["stringValue": user.uid]
-            ]
-        ]
-        guard let httpBody = try? JSONSerialization.data(withJSONObject: body) else {
-            throw PaymentError.attributionFailed
-        }
-        request.httpBody = httpBody
-
-        // URLSession does not throw on 4xx/5xx, so the status has to be checked
-        // explicitly — a rules rejection would otherwise read as success.
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse,
-                  (200..<300).contains(http.statusCode) else {
-                throw PaymentError.attributionFailed
-            }
-        } catch let error as PaymentError {
-            throw error
-        } catch {
-            throw PaymentError.attributionFailed
-        }
+        await backend.forwardTransaction(jws: jws)
     }
 
     deinit {

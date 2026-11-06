@@ -1,4 +1,3 @@
-import FirebaseAuth
 import Foundation
 import Observation
 
@@ -14,7 +13,7 @@ nonisolated struct LiveChannel: Identifiable, Sendable, Equatable {
     let creatorID: String
     let displayName: String
     let startedAt: Date?
-    /// Public IVS HLS URL. Not secret: it is how anyone watches the channel.
+    /// Public HLS URL. Not secret: it is how anyone watches the channel.
     let playbackURL: URL
 
     var id: String { streamID }
@@ -37,13 +36,16 @@ enum LiveChannelError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notAuthenticated:
-            return "Sign in to see who's live."
+            return String(localized: "Sign in to see who's live.")
         case .requestFailed(let code):
-            return "The discovery service returned an error (\(code))."
+            return String(localized: "The discovery service returned an error (\(code)).")
         case .decodingFailed:
-            return "We couldn’t read the discovery service response."
+            return String(localized: "We couldn’t read the discovery service response.")
         case .network(let error):
-            return error.localizedDescription
+            // Through AppError rather than `localizedDescription`, so a
+            // transport failure reads as "you appear to be offline" instead of
+            // a raw NSError domain and code.
+            return AppError(error).message
         }
     }
 }
@@ -58,24 +60,20 @@ nonisolated final class FirebaseLiveChannelProvider: LiveChannelProviding {
 
     private let endpoint: URL
     private let session: URLSession
+    private let authTokenProvider: AuthTokenProviding
 
     init(
         endpoint: URL = URL(string: "https://us-central1-aixcam.cloudfunctions.net/listLiveChannels")!,
-        session: URLSession = .shared
+        session: URLSession = .shared,
+        authTokenProvider: AuthTokenProviding = FirebaseAuthTokenProvider()
     ) {
         self.endpoint = endpoint
         self.session = session
+        self.authTokenProvider = authTokenProvider
     }
 
     func fetchLiveChannels() async throws -> [LiveChannel] {
-        guard let user = Auth.auth().currentUser else {
-            throw LiveChannelError.notAuthenticated
-        }
-
-        let idToken: String
-        do {
-            idToken = try await user.getIDToken()
-        } catch {
+        guard let idToken = await authTokenProvider.currentIDToken() else {
             throw LiveChannelError.notAuthenticated
         }
 
@@ -116,11 +114,22 @@ nonisolated enum LiveChannelDecoding {
     }
 
     private struct ChannelDTO: Decodable {
-        let streamId: String
-        let creatorId: String
+        let streamID: String
+        let creatorID: String
         let displayName: String?
         let startedAt: String?
         let playbackURL: String
+
+        // The wire keys are lowerCamelCase with an `Id` suffix; the Swift
+        // properties use `ID` to match the rest of the codebase. Same reason
+        // `ConnectedAccount` spells its keys out explicitly.
+        enum CodingKeys: String, CodingKey {
+            case streamID = "streamId"
+            case creatorID = "creatorId"
+            case displayName
+            case startedAt
+            case playbackURL
+        }
     }
 
     /// Entries without a usable playback URL are dropped rather than surfaced
@@ -135,8 +144,8 @@ nonisolated enum LiveChannelDecoding {
         }
 
         return envelope.result.channels.compactMap { dto in
-            guard !dto.streamId.isEmpty,
-                  !dto.creatorId.isEmpty,
+            guard !dto.streamID.isEmpty,
+                  !dto.creatorID.isEmpty,
                   let url = URL(string: dto.playbackURL),
                   let scheme = url.scheme?.lowercased(),
                   // Playback must not be plaintext; an http:// URL here would
@@ -145,8 +154,8 @@ nonisolated enum LiveChannelDecoding {
             else { return nil }
 
             return LiveChannel(
-                streamID: dto.streamId,
-                creatorID: dto.creatorId,
+                streamID: dto.streamID,
+                creatorID: dto.creatorID,
                 displayName: dto.displayName ?? "",
                 startedAt: dto.startedAt.flatMap(parseDate),
                 playbackURL: url

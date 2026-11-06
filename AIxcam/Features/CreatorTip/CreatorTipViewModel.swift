@@ -1,9 +1,10 @@
 import Foundation
+import OSLog
 import StoreKit
 
 @MainActor
 @Observable
-final class TipOrSubscribeViewModel {
+final class CreatorTipViewModel {
 
     // MARK: - View State
 
@@ -15,8 +16,8 @@ final class TipOrSubscribeViewModel {
     }
 
     private(set) var state: ViewState = .idle
-    var alertMessage: String?      // Bound to an .alert in the view.
-    var showThankYou = false
+    var error: AppError?           // Presented by `.errorAlert` in the view.
+    var isShowingThankYou = false
 
     var tipProducts: [Product] { payment.tipProducts }
     var subscriptionProducts: [Product] { payment.subscriptionProducts }
@@ -75,7 +76,7 @@ final class TipOrSubscribeViewModel {
         do {
             try await payment.restorePurchases()
         } catch {
-            present(error)
+            report(error)
         }
     }
 
@@ -87,22 +88,26 @@ final class TipOrSubscribeViewModel {
             let outcome = try await payment.purchase(product, creatorID: creatorID)
             switch outcome {
             case .success:
-                showThankYou = true
+                isShowingThankYou = true
             case .pending:
-                alertMessage = PaymentError.purchasePending.errorDescription
+                // Not a failure, but it needs the same acknowledgement, so it
+                // reuses the alert rather than adding a second presentation.
+                error = AppError(PaymentError.purchasePending)
             case .cancelled:
                 break   // Silent — user chose to back out.
             }
         } catch {
-            present(error)
+            report(error)
         }
     }
 
-    private func present(_ error: Error) {
-        if let payment = error as? PaymentError {
-            alertMessage = payment.errorDescription
-        } else {
-            alertMessage = error.localizedDescription
-        }
+    /// Records a failure for the UI and logs the detail.
+    ///
+    /// `AppError` already prefers a `LocalizedError`'s own wording, so
+    /// `PaymentError` needs no special case here.
+    private func report(_ failure: Error) {
+        guard let presentable = AppError.presentable(failure) else { return }
+        error = presentable
+        AppLog.payments.error("\(presentable.diagnostic, privacy: .public)")
     }
 }

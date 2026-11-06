@@ -271,11 +271,11 @@ struct TagPickerView: View {
 }
 
 #Preview {
-    @Previewable @State var selection: [String] = ["Flirting", "Roleplay"]
+    @Previewable @State var selection: [String] = ["Gaming", "Music"]
     return TagPickerView(
-        title: "Turn ons",
+        title: "Interests",
         subtitle: "Pick what you're into. You can add your own.",
-        catalog: InterestCatalog.turnOns,
+        catalog: InterestCatalog.interests,
         tint: .pink,
         selection: $selection
     )

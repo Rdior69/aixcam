@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 
 struct ForgotPasswordView: View {
@@ -9,7 +10,7 @@ struct ForgotPasswordView: View {
 
     @State private var isLoading = false
     @State private var didSend = false
-    @State private var errorMessage: String?
+    @State private var error: AppError?
 
     private var canSubmit: Bool {
         AuthValidation.isValidEmail(email) && !isLoading
@@ -79,11 +80,8 @@ struct ForgotPasswordView: View {
             .onSubmit { if canSubmit { Task { await send() } } }
             .accessibilityLabel("Email address")
 
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.red.opacity(0.9))
-                    .multilineTextAlignment(.center)
+            if let error {
+                ErrorBanner(error)
             }
 
             Button {
@@ -167,7 +165,7 @@ struct ForgotPasswordView: View {
     }
 
     private func send() async {
-        errorMessage = nil
+        error = nil
         isLoading = true
         defer { isLoading = false }
 
@@ -176,8 +174,9 @@ struct ForgotPasswordView: View {
                 email: email.trimmingCharacters(in: .whitespacesAndNewlines)
             )
             didSend = true
-        } catch {
-            errorMessage = error.localizedDescription
+        } catch let failure {
+            AppLog.auth.error("password reset failed: \(String(reflecting: failure), privacy: .public)")
+            error = AppError.presentable(failure)
         }
     }
 }

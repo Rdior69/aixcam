@@ -31,17 +31,17 @@ enum StreamingError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .infrastructureNotPrepared:
-            return "Streaming infrastructure is not prepared."
+            return String(localized: "Streaming infrastructure is not prepared.")
         case .insecureIngestURL:
-            return "Streaming ingest URL must use a secure transport (https/wss)."
+            return String(localized: "Streaming ingest URL must use a secure transport (https/wss).")
         case .disallowedHost:
-            return "Streaming host is not in the approved allowlist."
+            return String(localized: "Streaming host is not in the approved allowlist.")
         case .ipAddressHostBlocked:
-            return "Direct IP hosts are blocked for stream publishing."
+            return String(localized: "Direct IP hosts are blocked for stream publishing.")
         case .broadcastAlreadyActive:
-            return "A broadcast session is already active."
+            return String(localized: "A broadcast session is already active.")
         case .noActiveBroadcast:
-            return "No active broadcast session was found."
+            return String(localized: "No active broadcast session was found.")
         }
     }
 }
@@ -52,11 +52,20 @@ nonisolated struct StreamingSecurityPolicy: Sendable {
     let ingestURL: URL
     let allowedHosts: Set<String>
 
+    /// Ingest hosts this app will publish to.
+    ///
+    /// This list used to be derived from the very URL being validated, which
+    /// made `disallowedHost` unreachable — the check could not fail. Pinning it
+    /// to a constant means a compromised or misconfigured backend cannot
+    /// redirect a creator's camera feed to an arbitrary host. Add an entry here
+    /// when adding a streaming provider; that is deliberately a code change.
+    static let allowedIngestHosts: Set<String> = ["live.cloudflare.com"]
+
     static let `default`: StreamingSecurityPolicy = {
-        guard let url = URL(string: "https://stream.aixcam.local/ingest") else {
+        guard let url = URL(string: "rtmps://live.cloudflare.com:443/live/preview") else {
             preconditionFailure("Default ingest URL literal is malformed — programmer error")
         }
-        return StreamingSecurityPolicy(ingestURL: url, allowedHosts: ["stream.aixcam.local"])
+        return StreamingSecurityPolicy(ingestURL: url, allowedHosts: allowedIngestHosts)
     }()
 
     func validate() throws {
@@ -88,10 +97,7 @@ nonisolated struct StreamingSecurityPolicy: Sendable {
     }
 }
 
-protocol StreamingService: Sendable {
-    /// The IVS Chat room ARN for this channel — provided by the service to avoid
-    /// callers reaching directly into IVSConfiguration (O-4 DI fix).
-    var chatRoomARN: String { get }
+protocol StreamingServicing: Sendable {
     func prepareInfrastructure() async throws -> StreamingInfrastructureStatus
     func startBroadcast(creatorID: String) async throws -> BroadcastSession
     func endBroadcast(streamID: String) async throws
@@ -118,36 +124,33 @@ private actor StreamingStateStore {
     }
 }
 
-// MARK: — Real IVS streaming service
+// MARK: — Real streaming service
 
-/// Production StreamingService implementation backed by HaishinKit + AWS IVS.
+/// Production StreamingServicing implementation backed by HaishinKit, publishing
+/// RTMPS to whichever provider the backend hands back credentials for.
 ///
 /// Holds a reference to CameraManager so it can trigger RTMP connect/publish
 /// on the same RTMPStream that is already attached to the camera preview.
 @MainActor
-final class IVSStreamingService: StreamingService {
+final class LiveStreamingService: StreamingServicing {
     private let credentialsProvider: StreamCredentialsProviding
     private let cameraManager: CameraManager
 
     /// Credentials fetched from the backend during `prepareInfrastructure`.
-    /// Never sourced from the app bundle — see `IVSConfiguration` security note.
-    private var configuration: IVSConfiguration?
+    /// Never sourced from the app bundle — see `StreamCredentials` security note.
+    private var credentials: StreamCredentials?
 
     init(credentialsProvider: StreamCredentialsProviding, cameraManager: CameraManager) {
         self.credentialsProvider = credentialsProvider
         self.cameraManager = cameraManager
     }
 
-    /// Available only after `prepareInfrastructure` has fetched credentials.
-    /// Empty before then; chat connect fails gracefully in that window.
-    var chatRoomARN: String { configuration?.chatRoomARN ?? "" }
-
     func prepareInfrastructure() async throws -> StreamingInfrastructureStatus {
         // Fetch credentials from the authenticated backend. The stream key is
         // never shipped in the binary, so this network hop is mandatory.
-        let configuration: IVSConfiguration
+        let fetched: StreamCredentials
         do {
-            configuration = try await credentialsProvider.fetchCredentials()
+            fetched = try await credentialsProvider.fetchCredentials()
         } catch {
             return StreamingInfrastructureStatus(
                 isReady: false,
@@ -158,7 +161,7 @@ final class IVSStreamingService: StreamingService {
 
         // Surface a clear "not configured" state rather than crashing when the
         // backend has no channel provisioned for this creator yet.
-        guard !configuration.isPlaceholder else {
+        guard !fetched.isPlaceholder else {
             return StreamingInfrastructureStatus(
                 isReady: false,
                 securityLevel: .degraded,
@@ -166,30 +169,30 @@ final class IVSStreamingService: StreamingService {
             )
         }
 
-        // Validate the ingest URL scheme and host before attempting a connection.
-        guard let url = URL(string: "rtmps://\(configuration.ingestEndpoint)") else {
+        // Validate the backend's URL as given. It arrives complete (scheme,
+        // host, stream key) so there is nothing to compose — only to check.
+        guard let url = URL(string: fetched.ingestURL) else {
             throw StreamingError.insecureIngestURL
         }
-        let policy = StreamingSecurityPolicy(
+        try StreamingSecurityPolicy(
             ingestURL: url,
-            allowedHosts: [configuration.ingestEndpoint]
-        )
-        try policy.validate()
+            allowedHosts: StreamingSecurityPolicy.allowedIngestHosts
+        ).validate()
 
-        self.configuration = configuration
+        self.credentials = fetched
 
         return StreamingInfrastructureStatus(
             isReady: true,
             securityLevel: .secure,
-            description: "IVS endpoint validated — ready to broadcast"
+            description: "Ingest endpoint validated — ready to broadcast"
         )
     }
 
     func startBroadcast(creatorID: String) async throws -> BroadcastSession {
-        guard let configuration, !configuration.isPlaceholder else {
+        guard let credentials, !credentials.isPlaceholder else {
             throw StreamingError.infrastructureNotPrepared
         }
-        try await cameraManager.startPublishing(ingestURL: configuration.rtmpsURL)
+        try await cameraManager.startPublishing(ingestURL: credentials.ingestURL)
         return BroadcastSession(streamID: UUID().uuidString, startedAt: .now)
     }
 
@@ -203,15 +206,13 @@ final class IVSStreamingService: StreamingService {
 // Explicitly nonisolated: the app target defaults to main-actor isolation, but
 // this mock is a Sendable value type whose state lives in an actor, so it must
 // stay callable from any context (tests run off the main actor).
-nonisolated struct MockStreamingService: StreamingService {
+nonisolated struct MockStreamingService: StreamingServicing {
     private let policy: StreamingSecurityPolicy
     private let stateStore = StreamingStateStore()
 
     init(policy: StreamingSecurityPolicy = .default) {
         self.policy = policy
     }
-
-    var chatRoomARN: String { "arn:aws:ivschat:us-east-1:000000000000:room/mock-preview" }
 
     func prepareInfrastructure() async throws -> StreamingInfrastructureStatus {
         try policy.validate()

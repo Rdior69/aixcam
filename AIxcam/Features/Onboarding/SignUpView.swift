@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 
 struct SignUpView: View {
@@ -8,7 +9,7 @@ struct SignUpView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var isLoading = false
-    @State private var errorMessage: String?
+    @State private var error: AppError?
 
     private var passwordMismatch: Bool {
         !confirmPassword.isEmpty && password != confirmPassword
@@ -92,12 +93,8 @@ struct SignUpView: View {
                         }
                     }
 
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 4)
+                    if let error {
+                        ErrorBanner(error)
                     }
 
                     Button {
@@ -222,7 +219,7 @@ struct SignUpView: View {
     }
 
     private func signUp() async {
-        errorMessage = nil
+        error = nil
         isLoading = true
         defer { isLoading = false }
 
@@ -231,8 +228,9 @@ struct SignUpView: View {
                 email: email.trimmingCharacters(in: .whitespaces),
                 password: password
             )
-        } catch {
-            errorMessage = error.localizedDescription
+        } catch let failure {
+            AppLog.auth.error("sign up failed: \(String(reflecting: failure), privacy: .public)")
+            error = AppError.presentable(failure)
         }
     }
 }

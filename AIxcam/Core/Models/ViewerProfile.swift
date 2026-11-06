@@ -1,5 +1,11 @@
 import Foundation
 
+// The types below are explicitly `nonisolated`. The target builds with default
+// `@MainActor` isolation, which would otherwise isolate their members and their
+// inferred conformances (`Equatable`, `Codable`) to the main actor, making them
+// unusable from nonisolated code — an error in the Swift 6 language mode. These
+// are plain `Sendable` value types, so there is nothing to isolate.
+
 // MARK: — Gender
 
 /// Gender identity options.
@@ -8,7 +14,7 @@ import Foundation
 /// why `.selfDescribe` exists and carries free text. Identity is stored
 /// separately from `Pronouns`: knowing someone's gender does not tell you how to
 /// refer to them, and it is the pronouns that prevent misgendering in chat and UI.
-enum Gender: String, CaseIterable, Codable, Sendable, Identifiable {
+nonisolated enum Gender: String, CaseIterable, Codable, Sendable, Identifiable {
     case woman
     case man
     case transWoman
@@ -64,7 +70,7 @@ enum Gender: String, CaseIterable, Codable, Sendable, Identifiable {
 /// Pronoun sets. `.custom` carries free text so nobody is forced into a set that
 /// does not fit. This is the field the rest of the app should read when it needs
 /// to refer to a person.
-enum Pronouns: String, CaseIterable, Codable, Sendable, Identifiable {
+nonisolated enum Pronouns: String, CaseIterable, Codable, Sendable, Identifiable {
     case sheHer
     case heHim
     case theyThem
@@ -104,42 +110,44 @@ enum Pronouns: String, CaseIterable, Codable, Sendable, Identifiable {
 
 // MARK: — Interest catalogs
 
-/// Preset tags offered for the "turn ons" and "fetishes" pickers.
+/// Preset tags offered for the "interests" and "favourite categories" pickers.
 ///
-/// These are starting points only — both fields accept custom tags. Every entry
-/// describes activity between consenting adults; the platform is 18+ and the
-/// catalogs are curated to keep it that way.
-enum InterestCatalog {
+/// These are starting points only — both fields accept custom tags. Keep every
+/// entry suitable for a general audience: the App Store treats this as a
+/// user-generated-content app, and the catalogs are the one place where the
+/// platform itself suggests what to write.
+nonisolated enum InterestCatalog {
 
-    static let turnOns: [String] = [
-        "Flirting", "Teasing", "Dirty talk", "Sexting", "Roleplay",
-        "Romance", "Girlfriend experience", "Boyfriend experience",
-        "Dominance", "Submission", "Switch", "Praise", "Edging",
-        "Striptease", "Lingerie", "Cosplay", "Uniforms", "Costumes",
-        "Massage", "Sensory play", "Toys", "Voyeurism", "Exhibitionism",
-        "Mutual masturbation", "JOI", "Body worship", "Muscles", "Curves",
-        "Tattoos", "Piercings", "Glasses", "Accents", "Long hair",
-        "Confidence", "Intelligence", "Humour", "Singing", "Dancing",
-        "Gaming together", "Slow burn", "Age gap (18+)"
+    /// General hobbies and topics. Public by default.
+    static let interests: [String] = [
+        "Gaming", "Music", "Art", "Drawing", "Painting", "Photography",
+        "Film & TV", "Anime", "Comics", "Books", "Writing", "Cooking",
+        "Baking", "Coffee", "Fitness", "Running", "Yoga", "Hiking",
+        "Cycling", "Travel", "Languages", "Science", "Technology",
+        "Coding", "DIY & Making", "Woodworking", "Gardening", "Pets",
+        "Cats", "Dogs", "Fashion", "Board games", "Chess", "Puzzles",
+        "Cars", "Motorsport", "Football", "Basketball", "Skateboarding",
+        "Snowboarding", "Surfing", "Dancing", "Singing", "Podcasts",
+        "History", "Space", "Nature", "Mindfulness"
     ]
 
-    static let fetishes: [String] = [
-        "BDSM", "Bondage", "Rope / Shibari", "Impact play", "Spanking",
-        "Flogging", "Wax play", "Ice play", "Temperature play",
-        "Sensory deprivation", "Blindfolds", "Gags", "Collars", "Leashes",
-        "Chastity", "Orgasm control", "Tease and denial", "Humiliation",
-        "Degradation", "Financial domination", "Findom tributes",
-        "Foot fetish", "Shoe and heel fetish", "Stockings", "Pantyhose",
-        "Latex", "Leather", "PVC", "Corsets", "Cross-dressing",
-        "Pet play", "Primal play", "Medical roleplay", "Teacher roleplay",
-        "Boss roleplay", "Cuckolding", "Hotwife", "Voyeur scenes",
-        "Exhibitionist scenes", "Tickling", "Hair pulling", "Smoking",
-        "Food play", "Body writing", "Furry", "Anime and hentai", "ASMR"
+    /// The kinds of streams a viewer likes to watch. Shared with creators by
+    /// default so they can tell who their audience is.
+    static let categories: [String] = [
+        "Just Chatting", "IRL", "Gaming", "Speedruns", "Music & Performance",
+        "Art & Illustration", "Craft & DIY", "Cooking", "Fitness & Training",
+        "Yoga & Wellness", "Study With Me", "Coding & Tech",
+        "Science & Education", "Language Learning", "Travel & Outdoors",
+        "Photography", "Fashion & Beauty", "Q&A", "Interviews", "Reactions",
+        "Reviews", "Tutorials", "Board Games", "Chess", "Karaoke", "DJ Sets",
+        "ASMR", "Meditation", "Book Club", "Film Watchalong", "Sports Talk",
+        "Motorsport", "Pets & Animals", "Nature & Wildlife", "Comedy",
+        "Storytelling", "Behind the Scenes", "Charity Streams"
     ]
 }
 
 /// How widely a sensitive profile field is shared.
-enum FieldVisibility: String, CaseIterable, Codable, Sendable, Identifiable {
+nonisolated enum FieldVisibility: String, CaseIterable, Codable, Sendable, Identifiable {
     case everyone
     case creatorsOnly
     case onlyMe
@@ -170,7 +178,7 @@ enum FieldVisibility: String, CaseIterable, Codable, Sendable, Identifiable {
 /// `birthdate` is the source of truth for age — an app storing a plain "age"
 /// integer silently goes stale and cannot be used to prove an 18+ gate was
 /// enforced. Age is always derived.
-struct ViewerProfile: Codable, Sendable, Equatable {
+nonisolated struct ViewerProfile: Codable, Sendable, Equatable {
 
     /// Minimum age for the platform. Enforced at entry, not just displayed.
     static let minimumAge = 18
@@ -189,11 +197,11 @@ struct ViewerProfile: Codable, Sendable, Equatable {
     var pronounsCustom: String = ""
 
     var aboutMe: String = ""
-    var turnOns: [String] = []
-    var fetishes: [String] = []
+    var interests: [String] = []
+    var favoriteCategories: [String] = []
 
-    var turnOnsVisibility: FieldVisibility = .everyone
-    var fetishesVisibility: FieldVisibility = .creatorsOnly
+    var interestsVisibility: FieldVisibility = .everyone
+    var favoriteCategoriesVisibility: FieldVisibility = .creatorsOnly
 
     var updatedAt: Date?
 
@@ -243,7 +251,7 @@ struct ViewerProfile: Codable, Sendable, Equatable {
 
     // MARK: Validation
 
-    enum ValidationError: LocalizedError, Equatable {
+    nonisolated enum ValidationError: LocalizedError, Equatable {
         case displayNameEmpty
         case displayNameTooLong
         case birthdateMissing
@@ -256,21 +264,21 @@ struct ViewerProfile: Codable, Sendable, Equatable {
         var errorDescription: String? {
             switch self {
             case .displayNameEmpty:
-                return "Pick a display name so creators know what to call you."
+                return String(localized: "Pick a display name so creators know what to call you.")
             case .displayNameTooLong:
-                return "Display names are limited to \(ViewerProfile.displayNameMaxLength) characters."
+                return String(localized: "Display names are limited to \(ViewerProfile.displayNameMaxLength) characters.")
             case .birthdateMissing:
-                return "Enter your date of birth."
+                return String(localized: "Enter your date of birth.")
             case .underage:
-                return "You must be at least \(ViewerProfile.minimumAge) to use AIxcam."
+                return String(localized: "You must be at least \(ViewerProfile.minimumAge) to use AIxcam.")
             case .genderSelfDescriptionEmpty:
-                return "Add a word or two describing your gender, or pick another option."
+                return String(localized: "Add a word or two describing your gender, or pick another option.")
             case .pronounsCustomEmpty:
-                return "Type the pronouns you'd like people to use."
+                return String(localized: "Type the pronouns you'd like people to use.")
             case .aboutMeTooLong:
-                return "About me is limited to \(ViewerProfile.aboutMeMaxLength) characters."
+                return String(localized: "About me is limited to \(ViewerProfile.aboutMeMaxLength) characters.")
             case .tooManyTags:
-                return "Pick up to \(ViewerProfile.maxTags) tags per list."
+                return String(localized: "Pick up to \(ViewerProfile.maxTags) tags per list.")
             }
         }
     }
@@ -306,7 +314,7 @@ struct ViewerProfile: Codable, Sendable, Equatable {
             errors.append(.aboutMeTooLong)
         }
 
-        if turnOns.count > Self.maxTags || fetishes.count > Self.maxTags {
+        if interests.count > Self.maxTags || favoriteCategories.count > Self.maxTags {
             errors.append(.tooManyTags)
         }
 
@@ -317,7 +325,7 @@ struct ViewerProfile: Codable, Sendable, Equatable {
 
     /// A profile is "complete" once the required identity fields are filled in.
     /// Optional expression fields (about me, tags) are deliberately excluded —
-    /// the app must not hold a viewer hostage for declining to list a kink.
+    /// the app must not hold a viewer hostage for declining to list interests.
     var isComplete: Bool {
         !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && isOfAge
     }
@@ -333,8 +341,8 @@ struct ViewerProfile: Codable, Sendable, Equatable {
         copy.aboutMe = String(
             aboutMe.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.aboutMeMaxLength)
         )
-        copy.turnOns = Self.normalizeTags(turnOns)
-        copy.fetishes = Self.normalizeTags(fetishes)
+        copy.interests = Self.normalizeTags(interests)
+        copy.favoriteCategories = Self.normalizeTags(favoriteCategories)
         return copy
     }
 

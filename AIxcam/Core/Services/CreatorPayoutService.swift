@@ -16,15 +16,21 @@ enum PayoutError: LocalizedError {
         case .decodingFailed:
             return String(localized: "We couldn’t read the payout service response.")
         case .network(let error):
-            return error.localizedDescription
+            return AppError(error).message
         }
     }
 }
 
 // MARK: - DTOs
 
+// These are pure transport types, decoded off the main actor inside `send`.
+// The target builds with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, which
+// would otherwise infer a @MainActor-isolated Codable conformance — unusable
+// from any nonisolated context (including the tests). `nonisolated` opts the
+// whole type out; they are already Sendable, so nothing is given up.
+
 /// A Stripe connected (Express) account belonging to a creator.
-struct ConnectedAccount: Codable, Sendable {
+nonisolated struct ConnectedAccount: Codable, Sendable {
     let accountID: String          // Stripe "acct_..."
     let payoutsEnabled: Bool
     let detailsSubmitted: Bool
@@ -42,13 +48,13 @@ struct ConnectedAccount: Codable, Sendable {
 }
 
 /// A single-use onboarding link the app opens in a browser / ASWebAuthenticationSession.
-struct OnboardingLink: Codable, Sendable {
+nonisolated struct OnboardingLink: Codable, Sendable {
     let url: URL
     let expiresAt: Date
 }
 
 /// Read-only snapshot of a creator's available/pending balance.
-struct PayoutBalance: Codable, Sendable {
+nonisolated struct PayoutBalance: Codable, Sendable {
     let availableMinorUnits: Int
     let pendingMinorUnits: Int
     let currency: String

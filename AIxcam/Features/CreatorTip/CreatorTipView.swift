@@ -2,9 +2,9 @@ import SwiftUI
 import StoreKit
 
 struct CreatorTipView: View {
-    @State private var viewModel: TipOrSubscribeViewModel
+    @State private var viewModel: CreatorTipViewModel
 
-    init(viewModel: TipOrSubscribeViewModel) {
+    init(viewModel: CreatorTipViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
 
@@ -33,19 +33,8 @@ struct CreatorTipView: View {
             }
         }
         .task { await viewModel.onAppear() }
-        .alert(
-            "Something went wrong",
-            isPresented: Binding(
-                get: { viewModel.alertMessage != nil },
-                set: { if !$0 { viewModel.alertMessage = nil } }
-            ),
-            presenting: viewModel.alertMessage
-        ) { _ in
-            Button("OK", role: .cancel) {}
-        } message: { message in
-            Text(message)
-        }
-        .alert("Thank you!", isPresented: $viewModel.showThankYou) {
+        .errorAlert($viewModel.error)
+        .alert("Thank you!", isPresented: $viewModel.isShowingThankYou) {
             Button("You’re welcome", role: .cancel) {}
         } message: {
             Text("Your support means a lot to this creator.")

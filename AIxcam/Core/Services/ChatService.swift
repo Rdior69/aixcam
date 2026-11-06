@@ -1,14 +1,28 @@
 import FirebaseAuth
 import Foundation
 import Observation
+import OSLog
 
-struct ChatMessage: Identifiable, Sendable {
+nonisolated struct ChatMessage: Identifiable, Sendable, Equatable {
     let id: String
     let sender: String
     let text: String
     let timestamp: Date
 }
 
+/// Live chat for one broadcast, backed by `streams/{streamID}/messages`.
+///
+/// This replaced an AWS IVS Chat WebSocket client. IVS is unavailable on this
+/// project's AWS account — an organisation SCP denies `ivschat:*` — and rather
+/// than take on a second streaming vendor purely for chat, messages now live in
+/// Firestore alongside the stream record they belong to.
+///
+/// Reads are polled over the Firestore REST API rather than pushed. The app
+/// links only FirebaseAuth and FirebaseCore, and every other Firestore access
+/// here is REST (see `StreamHistoryService`, `ViewerProfileService`); real-time
+/// listeners would mean pulling in the full Firestore SDK. At `pollInterval`
+/// the latency is within what a chat overlay needs — moving to a snapshot
+/// listener is a worthwhile upgrade later, not a correctness fix.
 @Observable
 @MainActor
 final class ChatService {
@@ -16,219 +30,217 @@ final class ChatService {
     private(set) var isConnected = false
 
     private static let messageLimit = 200
-    private static let maxReconnectDelay: TimeInterval = 30
-    /// IVS Chat rejects messages over 500 bytes; cap client-side to fail fast
-    /// and to bound what a single client can push in one frame.
-    private static let maxOutgoingMessageLength = 500
+    /// Matches the ceiling in firestore.rules. Clamping client-side fails fast
+    /// instead of surfacing a rules rejection as a mysteriously failed send.
+    static let maxOutgoingMessageLength = 500
+    private static let pollInterval: Duration = .seconds(2)
 
-    private var webSocketTask: URLSessionWebSocketTask?
-    private var receiveTask: Task<Void, Never>?
-    private var reconnectTask: Task<Void, Never>?
-    private var currentRoomARN: String?
-    private var reconnectDelay: TimeInterval = 1.0
+    private var pollTask: Task<Void, Never>?
+    private var currentStreamID: String?
+    /// Document IDs already rendered, so a poll that re-reads the same window
+    /// does not duplicate what is on screen.
+    private var seenIDs: Set<String> = []
 
-    func connect(roomARN: String) async throws {
-        currentRoomARN = roomARN
-        reconnectDelay = 1.0
-        try await connectInternal(roomARN: roomARN)
+    private let baseURL: String
+    private let session: URLSession
+    private let authTokenProvider: AuthTokenProviding
+
+    init(
+        baseURL: String = ViewerProfileService.defaultBaseURL,
+        session: URLSession = .shared,
+        authTokenProvider: AuthTokenProviding = FirebaseAuthTokenProvider()
+    ) {
+        self.baseURL = baseURL
+        self.session = session
+        self.authTokenProvider = authTokenProvider
     }
 
-    private func connectInternal(roomARN: String) async throws {
-        let token = try await fetchToken(roomARN: roomARN)
-        let region = Self.region(from: roomARN)
-        let url = URL(string: "wss://edge.ivschat.\(region).amazonaws.com")!
+    // MARK: — Lifecycle
 
-        // Token is passed as the WebSocket subprotocol — this is how IVS Chat authenticates.
-        let task = URLSession.shared.webSocketTask(with: url, protocols: [token])
-        task.resume()
-        webSocketTask = task
-
-        // Confirm the handshake is complete before advertising connectivity.
-        // A successful pong response means the connection is fully established.
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            task.sendPing { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume()
-                }
-            }
+    func connect(streamID: String) async throws {
+        guard await authTokenProvider.currentIdentity() != nil else {
+            throw ChatError.notAuthenticated
         }
-        isConnected = true
-        // Handshake succeeded — reset backoff so a later drop starts from 1s again.
-        reconnectDelay = 1.0
 
-        // Task.detached breaks out of @MainActor so WebSocket receives and JSON
-        // decoding run on a background executor. Only state mutations hop back
-        // to @MainActor via MainActor.run. The URLSessionWebSocketTask is passed
-        // directly to avoid accessing the @MainActor-isolated webSocketTask property
-        // from a non-isolated context.
-        receiveTask = Task.detached { [weak self, task] in
-            await self?.receiveMessages(from: task)
+        disconnect()
+        currentStreamID = streamID
+        isConnected = true
+
+        pollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.poll()
+                try? await Task.sleep(for: ChatService.pollInterval)
+            }
         }
     }
 
     func disconnect() {
-        reconnectTask?.cancel()
-        reconnectTask = nil
-        currentRoomARN = nil
-        receiveTask?.cancel()
-        webSocketTask?.cancel(with: .goingAway, reason: nil)
-        webSocketTask = nil
+        pollTask?.cancel()
+        pollTask = nil
+        currentStreamID = nil
+        seenIDs = []
+        messages = []
         isConnected = false
     }
 
-    private func scheduleReconnect() {
-        guard let arn = currentRoomARN else { return }
-        let delay = reconnectDelay
-        reconnectDelay = min(reconnectDelay * 2, Self.maxReconnectDelay)
+    // MARK: — Read
 
-        reconnectTask?.cancel()
-        reconnectTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(delay))
-            guard let self, !Task.isCancelled else { return }
-            try? await self.connectInternal(roomARN: arn)
-        }
-    }
+    private func poll() async {
+        guard let streamID = currentStreamID,
+              let identity = await authTokenProvider.currentIdentity() else { return }
 
-    func send(_ text: String) {
-        guard isConnected, let task = webSocketTask else { return }
+        var components = URLComponents(string: "\(baseURL)/streams/\(streamID)/messages")!
+        components.queryItems = [
+            URLQueryItem(name: "orderBy", value: "createdAt"),
+            URLQueryItem(name: "pageSize", value: "\(Self.messageLimit)")
+        ]
+        guard let url = components.url else { return }
 
-        // Trim, drop empties, and clamp length before it ever hits the wire.
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        let content = String(trimmed.prefix(Self.maxOutgoingMessageLength))
-
-        let payload = SendPayload(Action: "SEND_MESSAGE", RequestId: UUID().uuidString, Content: content)
-        guard let data = try? JSONEncoder().encode(payload),
-              let json = String(data: data, encoding: .utf8) else { return }
-        task.send(.string(json)) { _ in }
-    }
-
-    private nonisolated func receiveMessages(from wsTask: URLSessionWebSocketTask) async {
-        while !Task.isCancelled {
-            do {
-                let message = try await wsTask.receive()
-                if case .string(let text) = message {
-                    // Hop to @MainActor only for decoding + append.
-                    // The I/O wait above runs on a background executor.
-                    // self is strongly retained for the duration of this instance
-                    // method, so no weak capture is needed inside MainActor.run.
-                    await MainActor.run {
-                        guard let chatMessage = ChatService.parseMessage(text) else { return }
-                        self.messages.append(chatMessage)
-                        if self.messages.count > ChatService.messageLimit {
-                            self.messages.removeFirst(self.messages.count - ChatService.messageLimit)
-                        }
-                    }
-                }
-            } catch {
-                if !Task.isCancelled {
-                    await MainActor.run { [weak self] in
-                        self?.isConnected = false
-                        self?.scheduleReconnect()
-                    }
-                }
-                break
-            }
-        }
-    }
-
-    // internal (not private) so unit tests can exercise the parser directly.
-    static func parseMessage(_ text: String) -> ChatMessage? {
-        guard let data = text.data(using: .utf8),
-              let event = try? JSONDecoder().decode(IncomingEvent.self, from: data),
-              event.eventType == "MESSAGE",
-              let content = event.Content,
-              let id = event.Id else { return nil }
-
-        let timestamp: Date
-        if let timeStr = event.SendTime {
-            timestamp = ISO8601DateFormatter().date(from: timeStr) ?? Date()
-        } else {
-            timestamp = Date()
-        }
-
-        let displayName = event.Sender?.Attributes?["displayName"]
-            ?? event.Sender?.UserId
-            ?? "Viewer"
-
-        return ChatMessage(id: id, sender: displayName, text: content, timestamp: timestamp)
-    }
-
-    private func fetchToken(roomARN: String) async throws -> String {
-        guard let user = Auth.auth().currentUser else {
-            throw ChatError.notAuthenticated
-        }
-        let idToken = try await user.getIDToken()
-
-        let url = URL(string: "https://us-central1-aixcam.cloudfunctions.net/createChatToken")!
         var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["data": ["roomArn": roomARN]])
+        request.setValue("Bearer \(identity.idToken)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 10
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw ChatError.tokenFetchFailed
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return }
+
+            // 404 means nobody has sent a message yet — a subcollection does not
+            // exist until its first document does. Not an error.
+            if http.statusCode == 404 { return }
+            guard (200...299).contains(http.statusCode) else {
+                AppLog.streaming.error("chat poll: HTTP \(http.statusCode, privacy: .public)")
+                return
+            }
+
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let documents = json["documents"] as? [[String: Any]] else { return }
+
+            merge(documents.compactMap(Self.parse(document:)))
+        } catch let error where error.isCancellation {
+            // Routine: disconnect() cancels the poll loop.
+        } catch {
+            AppLog.streaming.error("chat poll failed: \(String(reflecting: error), privacy: .public)")
         }
-
-        let result = try JSONDecoder().decode(TokenResponse.self, from: data)
-        return result.result.token
     }
 
-    // internal (not private) so unit tests can verify region derivation.
-    static func region(from arn: String) -> String {
-        // arn:aws:ivschat:<region>:<account>:room/<id>
-        let parts = arn.split(separator: ":")
-        return parts.count > 3 ? String(parts[3]) : "us-east-1"
+    /// Appends only messages not already shown, preserving send order.
+    private func merge(_ incoming: [ChatMessage]) {
+        let fresh = incoming.filter { !seenIDs.contains($0.id) }
+        guard !fresh.isEmpty else { return }
+
+        for message in fresh { seenIDs.insert(message.id) }
+        messages.append(contentsOf: fresh.sorted { $0.timestamp < $1.timestamp })
+
+        if messages.count > Self.messageLimit {
+            let overflow = messages.count - Self.messageLimit
+            for dropped in messages.prefix(overflow) { seenIDs.remove(dropped.id) }
+            messages.removeFirst(overflow)
+        }
     }
-}
 
-// MARK: — Private wire types
+    // MARK: — Write
 
-private struct SendPayload: Encodable {
-    let Action: String
-    let RequestId: String
-    let Content: String
-}
+    func send(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let streamID = currentStreamID else { return }
+        let content = String(trimmed.prefix(Self.maxOutgoingMessageLength))
 
-private struct IncomingEvent: Decodable {
-    let eventType: String
-    let Id: String?
-    let Content: String?
-    let SendTime: String?
-    let RequestId: String?
-    let Sender: IncomingSender?
-
-    enum CodingKeys: String, CodingKey {
-        case eventType = "Type"
-        case Id, Content, SendTime, RequestId, Sender
+        Task { [weak self] in
+            await self?.post(content, to: streamID)
+        }
     }
-}
 
-private struct IncomingSender: Decodable {
-    let UserId: String
-    let Attributes: [String: String]?
-}
+    private func post(_ text: String, to streamID: String) async {
+        guard let identity = await authTokenProvider.currentIdentity() else { return }
 
-private struct TokenResponse: Decodable {
-    struct Result: Decodable { let token: String }
-    let result: Result
+        let displayName = Auth.auth().currentUser?.displayName ?? "Viewer"
+        let body: [String: Any] = [
+            "fields": [
+                // Stamped so the rules can pin authorship to the caller rather
+                // than trusting a client-supplied name.
+                "senderUid": ["stringValue": identity.userID],
+                "displayName": ["stringValue": displayName],
+                "text": ["stringValue": text],
+                "createdAt": ["timestampValue": ISO8601DateFormatter().string(from: Date())]
+            ]
+        ]
+
+        var request = URLRequest(url: URL(string: "\(baseURL)/streams/\(streamID)/messages")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(identity.idToken)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        request.timeoutInterval = 10
+
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse,
+                  (200...299).contains(http.statusCode) else {
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                let detail = String(decoding: data.prefix(256), as: UTF8.self)
+                AppLog.streaming.error("chat send: HTTP \(status, privacy: .public) — \(detail)")
+                return
+            }
+            // Pull the new message in immediately rather than waiting a tick, so
+            // the sender sees their own text appear without a visible lag.
+            await poll()
+        } catch {
+            AppLog.streaming.error("chat send failed: \(String(reflecting: error), privacy: .public)")
+        }
+    }
+
+    // MARK: — Decoding
+
+    // internal (not private) so unit tests can exercise the parser directly.
+    static func parse(document: [String: Any]) -> ChatMessage? {
+        guard let name = document["name"] as? String,
+              let fields = document["fields"] as? [String: Any],
+              let text = string(fields, "text"), !text.isEmpty else { return nil }
+
+        let id = String(name.split(separator: "/").last ?? "")
+        guard !id.isEmpty else { return nil }
+
+        let sender = string(fields, "displayName").flatMap { $0.isEmpty ? nil : $0 } ?? "Viewer"
+        let timestamp = timestampValue(fields, "createdAt").flatMap(parseDate) ?? Date()
+
+        return ChatMessage(id: id, sender: sender, text: text, timestamp: timestamp)
+    }
+
+    private static func string(_ fields: [String: Any], _ key: String) -> String? {
+        (fields[key] as? [String: Any])?["stringValue"] as? String
+    }
+
+    private static func timestampValue(_ fields: [String: Any], _ key: String) -> String? {
+        (fields[key] as? [String: Any])?["timestampValue"] as? String
+    }
+
+    private static let isoWithFraction: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    private static let isoPlain: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    private static func parseDate(_ value: String) -> Date? {
+        isoWithFraction.date(from: value) ?? isoPlain.date(from: value)
+    }
 }
 
 // MARK: — Errors
 
 enum ChatError: LocalizedError, Equatable {
     case notAuthenticated
-    case tokenFetchFailed
+    case sendFailed
 
     var errorDescription: String? {
         switch self {
-        case .notAuthenticated: return "Sign in required to join chat."
-        case .tokenFetchFailed: return "Could not obtain a chat session token."
+        case .notAuthenticated: return String(localized: "Sign in required to join chat.")
+        case .sendFailed:       return String(localized: "Your message couldn’t be sent.")
         }
     }
 }

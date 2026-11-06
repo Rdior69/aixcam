@@ -214,24 +214,7 @@ final class AuthenticatedFlowUITests: AuthenticatedUITestCase {
         XCTAssertTrue(app.staticTexts[credentials.email].waitForExistence(timeout: defaultTimeout),
                       "Profile should show the signed-in account's email")
         XCTAssertTrue(app.staticTexts["Your Profile"].exists)
-        XCTAssertTrue(app.staticTexts["ID Verification"].exists)
         XCTAssertTrue(app.buttons["Sign Out"].exists)
-    }
-
-    /// ID verification gates live broadcasting, so an unverified account must be
-    /// told so rather than being left to discover it at go-live time.
-    @MainActor
-    func testUnverifiedAccountSeesTheIDVerificationPrompt() throws {
-        try signInWithTestAccount()
-
-        selectTab("Profile")
-
-        XCTAssertTrue(
-            app.staticTexts["ID Verification"].waitForExistence(timeout: defaultTimeout),
-            "Profile should surface ID verification"
-        )
-        XCTAssertTrue(app.staticTexts["Required for live broadcasting"].exists,
-                      "An unverified test account should be prompted to verify")
     }
 
     @MainActor

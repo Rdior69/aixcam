@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 
 struct SignInView: View {
@@ -7,7 +8,7 @@ struct SignInView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var isLoading = false
-    @State private var errorMessage: String?
+    @State private var error: AppError?
 
     var body: some View {
         ZStack {
@@ -51,12 +52,8 @@ struct SignInView: View {
                         .padding(.top, 2)
                     }
 
-                    if let errorMessage {
-                        Text(errorMessage)
-                            .font(.footnote)
-                            .foregroundStyle(.red.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 4)
+                    if let error {
+                        ErrorBanner(error)
                     }
 
                     Button {
@@ -131,14 +128,15 @@ struct SignInView: View {
     }
 
     private func signIn() async {
-        errorMessage = nil
+        error = nil
         isLoading = true
         defer { isLoading = false }
 
         do {
             try await appRouter.signIn(email: email.trimmingCharacters(in: .whitespaces), password: password)
-        } catch {
-            errorMessage = error.localizedDescription
+        } catch let failure {
+            AppLog.auth.error("sign in failed: \(String(reflecting: failure), privacy: .public)")
+            error = AppError.presentable(failure)
         }
     }
 }

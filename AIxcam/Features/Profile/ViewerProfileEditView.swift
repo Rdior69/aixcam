@@ -24,9 +24,9 @@ struct ViewerProfileEditView: View {
 
     @State private var draft = ViewerProfile()
     @State private var hasLoadedDraft = false
-    @State private var showingTurnOnsPicker = false
-    @State private var showingFetishesPicker = false
-    @State private var saveError: String?
+    @State private var isShowingInterestsPicker = false
+    @State private var isShowingCategoriesPicker = false
+    @State private var error: AppError?
     @State private var didAttemptSubmit = false
 
     /// Nil until a birthdate is chosen, so the picker doesn't imply a default DOB.
@@ -55,10 +55,10 @@ struct ViewerProfileEditView: View {
                     interestsSection
 
                     if didAttemptSubmit, let first = validationErrors.first {
-                        errorBanner(first.localizedDescription)
+                        ErrorBanner(AppError(first), style: .prominent)
                     }
-                    if let saveError {
-                        errorBanner(saveError)
+                    if let error {
+                        ErrorBanner(error, style: .prominent)
                     }
 
                     submitButton
@@ -74,22 +74,22 @@ struct ViewerProfileEditView: View {
         .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar(mode == .setup ? .hidden : .visible, for: .navigationBar)
         .task { loadDraftIfNeeded() }
-        .sheet(isPresented: $showingTurnOnsPicker) {
+        .sheet(isPresented: $isShowingInterestsPicker) {
             TagPickerView(
-                title: "Turn ons",
-                subtitle: "What gets your attention. Pick from the list or add your own.",
-                catalog: InterestCatalog.turnOns,
+                title: "Interests",
+                subtitle: "What you're into. Pick from the list or add your own.",
+                catalog: InterestCatalog.interests,
                 tint: .pink,
-                selection: $draft.turnOns
+                selection: $draft.interests
             )
         }
-        .sheet(isPresented: $showingFetishesPicker) {
+        .sheet(isPresented: $isShowingCategoriesPicker) {
             TagPickerView(
-                title: "Fetishes",
-                subtitle: "Kinks and fetishes you're into. Everything here is between consenting adults.",
-                catalog: InterestCatalog.fetishes,
+                title: "Favourite categories",
+                subtitle: "The kinds of streams you like to watch.",
+                catalog: InterestCatalog.categories,
                 tint: .purple,
-                selection: $draft.fetishes
+                selection: $draft.favoriteCategories
             )
         }
     }
@@ -263,21 +263,21 @@ struct ViewerProfileEditView: View {
             sectionLabel("Interests")
 
             interestBlock(
-                title: "Turn ons",
-                caption: "What you're into.",
-                tags: draft.turnOns,
+                title: "Interests",
+                caption: "Hobbies and topics you're into.",
+                tags: draft.interests,
                 tint: .pink,
-                visibility: $draft.turnOnsVisibility,
-                onEdit: { showingTurnOnsPicker = true }
+                visibility: $draft.interestsVisibility,
+                onEdit: { isShowingInterestsPicker = true }
             )
 
             interestBlock(
-                title: "Fetishes",
-                caption: "Kinks you want creators to know about.",
-                tags: draft.fetishes,
+                title: "Favourite categories",
+                caption: "The kinds of streams you want creators to know you watch.",
+                tags: draft.favoriteCategories,
                 tint: .purple,
-                visibility: $draft.fetishesVisibility,
-                onEdit: { showingFetishesPicker = true }
+                visibility: $draft.favoriteCategoriesVisibility,
+                onEdit: { isShowingCategoriesPicker = true }
             )
         }
     }
@@ -416,21 +416,6 @@ struct ViewerProfileEditView: View {
             .accessibilityHidden(true)
     }
 
-    private func errorBanner(_ message: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption)
-            Text(message)
-                .font(.footnote)
-            Spacer(minLength: 0)
-        }
-        .foregroundStyle(.red.opacity(0.9))
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.red.opacity(0.12))
-        )
-    }
 
     /// Generic single-select menu so gender and pronouns stay visually identical.
     private func optionMenu<Option: Identifiable>(
@@ -493,7 +478,7 @@ struct ViewerProfileEditView: View {
 
     private func submit() async {
         didAttemptSubmit = true
-        saveError = nil
+        error = nil
         guard validationErrors.isEmpty else { return }
 
         let success = await profileService.save(draft)
@@ -502,7 +487,7 @@ struct ViewerProfileEditView: View {
             // In .setup the profile gate in ContentView reacts to the saved
             // profile becoming complete and swaps this screen for the app.
         } else {
-            saveError = "We couldn't save your profile. Check your connection and try again."
+            error = AppError(message: String(localized: "We couldn’t save your profile. Check your connection and try again."))
         }
     }
 }

@@ -66,9 +66,12 @@ class AuthFlowUITestCase: XCTestCase {
     /// The auth forms are a centred ZStack rather than a scroll view, so a raised
     /// keyboard can leave the next field or the submit button unhittable. Sending
     /// a newline resigns focus and brings the rest of the form back on screen.
+    /// Pass `dismissKeyboard: false` on a field whose return key submits the
+    /// form — see `dismissKeyboard()`.
     @MainActor
     func fill(_ element: XCUIElement,
               with value: String,
+              dismissKeyboard shouldDismissKeyboard: Bool = true,
               file: StaticString = #filePath,
               line: UInt = #line) {
         XCTAssertTrue(
@@ -79,7 +82,7 @@ class AuthFlowUITestCase: XCTestCase {
         element.tap()
         dismissStrongPasswordPromptIfPresent()
         element.typeText(value)
-        dismissKeyboard()
+        if shouldDismissKeyboard { dismissKeyboard() }
     }
 
     /// Clears `element` and types `value` in its place.
@@ -89,6 +92,7 @@ class AuthFlowUITestCase: XCTestCase {
     @MainActor
     func replaceText(in element: XCUIElement,
                      with value: String,
+                     dismissKeyboard shouldDismissKeyboard: Bool = true,
                      file: StaticString = #filePath,
                      line: UInt = #line) {
         XCTAssertTrue(
@@ -106,9 +110,16 @@ class AuthFlowUITestCase: XCTestCase {
         }
 
         element.typeText(value)
-        dismissKeyboard()
+        if shouldDismissKeyboard { dismissKeyboard() }
     }
 
+    /// Resigns focus by sending a newline.
+    ///
+    /// Only safe on a field whose return key does nothing but dismiss. On a
+    /// field carrying `.submitLabel(.send)` with an `.onSubmit` action — the
+    /// reset-password email field — return *is* the submit button, so calling
+    /// this fires the real request and swaps the button for a spinner. Those
+    /// call sites pass `dismissKeyboard: false`.
     @MainActor
     func dismissKeyboard() {
         if app.keyboards.count > 0 {
@@ -445,11 +456,15 @@ final class ForgotPasswordUITests: AuthFlowUITestCase {
         XCTAssertFalse(sendButton.isEnabled,
                        "Send Reset Link should be disabled with no address")
 
-        fill(emailField, with: "not-an-email")
+        // The keyboard stays up throughout: this field's return key is wired to
+        // `.onSubmit { send() }`, so dismissing with a newline would send a real
+        // reset email and replace the button with a spinner. Nothing here is
+        // tapped, and `isEnabled` does not require the button to be unobscured.
+        fill(emailField, with: "not-an-email", dismissKeyboard: false)
         XCTAssertFalse(sendButton.isEnabled,
                        "Send Reset Link should stay disabled for a malformed address")
 
-        replaceText(in: emailField, with: "viewer@example.com")
+        replaceText(in: emailField, with: "viewer@example.com", dismissKeyboard: false)
         XCTAssertTrue(sendButton.isEnabled,
                       "Send Reset Link should enable once the address parses")
     }
